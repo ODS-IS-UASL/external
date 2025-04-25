@@ -1,0 +1,11 @@
+# ドローン航路のDIPS クライアントID
+drone.client-id: ${DRONE_CLIENT_ID:XXXXX}
+
+## DIPS クライアントID
+dips.token.refresh.request.client-id: ${DIPS_TOKEN_REFRESH_CLIENT_ID:fql-app-xxx}
+## DIPS クライアントシークレット
+dips.refresh.request.client-secret: ${DIPS_TOKEN_REFRESH_CLIENT_SECRET:XXXXX}
+## DIPSトークンの有効期限チェックに使用する猶予時間（s）
+dips.token.expiration.buffer: ${DIPS_TOKEN_EXPIRATION_BUFFER:100}
+## DIPSリフレッシュトークンの有効期限(s)
+dips.refresh.token.expiration: ${DIPS_REFRESH_TOKEN_EXPIRATION:3600}

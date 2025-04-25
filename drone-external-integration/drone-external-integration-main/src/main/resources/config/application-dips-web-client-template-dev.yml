@@ -1,0 +1,9 @@
+## dipsWebClientTemplate定義
+drone.common.web-client:
+  client:
+    # DIPS API
+    dipsWebClientTemplate:
+      base-url: ${DIPS_API_BASE_DOMAIN_URL:http://localhost:8081}${DIPS_API_BASE_PATH:/api}
+    # DIPS トークン
+    dipsTokenTemplate:
+      base-url: ${DIPS_TOKEN_BASE_DOMAIN_URL:http://localhost:18088}${DIPS_TOKEN_BASE_PATH:/auth/realms/drs-fpl/protocol/openid-connect}

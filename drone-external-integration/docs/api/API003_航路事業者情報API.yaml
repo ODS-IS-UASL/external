@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /airwayTenantLink:
+    post:
+      tags:
+        - ドローン航路システム
+      summary: 航路関係者情報を登録する
+      description: |-
+        指定した航路IDと事業者情報を紐づけ登録するAPIです。
+
+        使用するモデル：droneRoute.RequestRouteTenantInfo
+      requestBody:
+        description: Request Body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/droneRoute.RequestRouteTenantInfo"
+
+      responses:
+        '200':
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseSuccess'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseNotFoundError"
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+
+    put:
+      tags:
+        - ドローン航路システム
+      summary: 航路関係者情報を更新する
+      description: |-
+        指定した航路IDに紐づく事業者情報を更新するAPIです。
+        
+        updateTypeに0を指定すると、設定された事業者情報で上書き更新します。
+        
+        updateTypeに1を指定すると、設定された事業者情報を追加更新します。
+
+        使用するモデル：droneRoute.RequestUpdateRouteTenantInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/droneRoute.RequestUpdateRouteTenantInfo'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseSuccess'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseNotFoundError'
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+
+    delete:
+      tags:
+        - ドローン航路システム
+      summary: 航路関係者情報を削除する
+      description: |-
+        指定した航路IDに紐づく事業者情報を削除するAPIです。
+      parameters:
+        - name: airwayId
+          in: query
+          required: true
+          description: 削除対象の航路ID
+          schema:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: 削除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseSuccess'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseNotFoundError'
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+        
+components:
+  schemas:
+    droneRoute.RequestRouteTenantInfo:
+      description: 登録対象の航路関係者情報
+      type: object
+      properties:
+        airwayId:
+          type: string
+          description: 登録対象の航路ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        relatedPartiesIdList:
+          type: array
+          description: "登録対象の事業者IDのリスト"
+          items:
+            type: string
+            description: "登録対象の事業者ID"
+          example: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
+          minItems: 1 # 1つ以上の要素が必要であることを示す
+      required:
+        - airwayId
+        - relatedPartiesIdList
+
+    droneRoute.RequestUpdateRouteTenantInfo:
+      description: "更新対象の航路関係者情報"
+      type: object
+      properties:
+        updateType:
+          type: string
+          description: "更新の種類（例: 0：上書き更新、1：追加更新）"
+          example: "0"
+        airwayId:
+          type: string
+          description: "更新対象の航路ID"
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        relatedPartiesIdList:
+          type: array
+          description: "更新対象の事業者のIDのリスト"
+          items:
+            type: string
+            description: "更新対象の事業者のID"
+          example: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
+          minItems: 1 # 1つ以上の要素が必要であることを示す
+      required:
+        - updateType
+        - airwayId
+        - relatedPartiesIdList
+
+    common.ResponseSuccess:
+      description: オブジェクト
+      type: object
+        
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "航路IDは必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "指定された事業者ID(123e4567-e89b-12d3-a456-426614174000)は存在しません。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage

@@ -1,0 +1,33 @@
+spring:
+  freemarker:
+    template-loader-path: classpath:/templates/
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    test-connection: false
+
+systemuser: -1
+rest.api.airway.url.get: ${AIRWAY_API_BASE_DOMAIN_URL:}${AIRWAY_API_PATH:/airwayDesign/airway}
+
+mail:
+  template:
+    fromAddress: ${MAIL_FROM_ADDRESS:test.sample@example.com}
+    fromName: ${MAIL_FROM_NAME:ドローン航路基盤システム}
+
+rest.api.dips.area.url.get: ${DIPS_FLIGHT_PROHIBITED_AREA_URL:https://www.stg.uafpi.dips.mlit.go.jp/api/flight-prohibited-area/search}
+
+mqtt.topic.airway: airway/administrator/airwayInformation/#
+mqtt.topic.airway-reservation: airway/operator/+/airwayReservation/#
+notice.mail.login.link: ${MAIL_LOGIN_LINK:}
+notice.mail.contanct.person: ${MAIL_CONTACT_PERSON:システム管理者}
+notice.mail.contanct.affiliation: ${MAIL_CONTACT_AFFILIATION:所属組織}
+notice.mail.contanct.phonenumber: ${MAIL_CONTACT_PHONENUMBER:XXX-XXXX-XXXX}
+notice.mail.contanct.mailaddress: ${MAIL_CONTACT_MAILADDRESS:utm.sample@example.co.jp}

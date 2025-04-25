@@ -1,0 +1,25 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>drone</groupId>
+		<artifactId>drone-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>drone-external-integration</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>drone-external-integration</name>
+	<description>drone-external-integration project</description>
+	<modules>
+		<module>drone-external-integration-main</module>
+		<module>drone-external-integration-dips</module>
+	    <module>drone-external-integration-auth</module>
+	    <module>drone-external-integration-notice</module>
+	</modules>
+
+</project>

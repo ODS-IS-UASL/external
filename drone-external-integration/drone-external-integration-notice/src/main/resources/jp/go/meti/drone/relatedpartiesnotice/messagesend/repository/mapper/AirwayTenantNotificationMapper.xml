@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayTenantNotificationMapper">
+  <select id="searchAirwayTenantNotification"  parameterType="String" 
+  resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.TenantNotificationEntity">
+    SELECT
+        t.operator_id AS operatorId,
+        t.operator_name AS operatorName,
+        t.notification_type AS notificationType, 
+        nti.notification_target AS notificationTarget
+    FROM
+        tenant t,
+        airway_tenant_association ata,
+        notification_target_info nti
+    WHERE
+        t.operator_id = ata.operator_id
+        AND t.operator_id = nti.operator_id
+        AND nti.notification_type = '1'
+        AND ata.airway_id = #{airwayId}
+  </select>
+  <!--operator_idに基づいて事業者周知情報取得-->
+  <select id="findAirwayTenantNotification" 
+  resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.TenantNotificationEntity">
+    SELECT
+        t.operator_id AS operatorId,
+        t.operator_name AS operatorName,
+        t.notification_type AS notificationType, 
+        nti.notification_target AS notificationTarget
+    FROM
+        tenant t,
+        notification_target_info nti
+    WHERE t.operator_id = nti.operator_id
+        AND t.notification_type = nti.notification_type
+        AND t.operator_id IN
+        <foreach item="id" collection="operatorIdList" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+  </select>
+  
+  
+</mapper>

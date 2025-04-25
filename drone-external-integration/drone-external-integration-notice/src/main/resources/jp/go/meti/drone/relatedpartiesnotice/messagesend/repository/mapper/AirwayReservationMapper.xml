@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayReservationMapper">
+  <insert id="insertAirwayReservation" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationEntity">
+	INSERT INTO airway_reservation (
+		airway_reserve_id,
+		operator_id,
+		event_id,
+		status,
+		reserved_at,
+		updated_at,
+		creation_id, 
+		creation_datetime, 
+		update_id, 
+		update_datetime) 
+		VALUES (
+			#{airwayReserveId},
+			#{operatorId},
+			#{eventId},
+			#{status},
+			#{reservedAt},
+			#{updatedAt},
+			#{creationId},
+			CURRENT_TIMESTAMP,
+			#{updateId},
+			CURRENT_TIMESTAMP)
+  </insert>
+  
+  <select id="getAirwayReservationById" parameterType="String" resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationEntity">
+    SELECT *
+    FROM airway_reservation
+    WHERE airway_reserve_id = #{airwayReserveId};
+  </select>
+  
+  <update id="updateByAirwayReservation" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationEntity">
+   UPDATE airway_reservation
+     SET
+       operator_id = #{operatorId},
+       event_id = #{eventId},
+	   status = #{status},
+	   reserved_at = #{reservedAt},
+	   updated_at = #{updatedAt},
+	   update_id = #{updateId}, 
+	   update_datetime = CURRENT_TIMESTAMP
+   WHERE
+     airway_reserve_id = #{airwayReserveId};
+  </update>
+</mapper>

@@ -1,0 +1,8 @@
+[settings]
+loop_wait = "1.0"
+# base_altitude_type: imu or gps
+base_altitude_type = "imu"
+# alter_battery_level_flg manual
+# 0 : battery_level is not alter
+# 1 : battery_level = (x < 0 or 100 < x) is alter to None
+alter_battery_level_flg = "1"

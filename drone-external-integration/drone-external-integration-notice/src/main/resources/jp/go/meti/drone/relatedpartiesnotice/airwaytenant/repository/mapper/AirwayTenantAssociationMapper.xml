@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.airwaytenant.repository.mapper.AirwayTenantAssociationMapper">
+  <resultMap id="AirwayTenantAssociationMapper" type="jp.go.meti.drone.relatedpartiesnotice.airwaytenant.repository.entity.AirwayTenantAssociationEntity">
+		<id column="airway_id" jdbcType="VARCHAR" property="airwayId" />
+		<id column="operator_id" jdbcType="VARCHAR" property="operatorId" />
+		<result column="creation_id" jdbcType="INTEGER" property="creationId" />
+		<result column="creation_datetime" jdbcType="TIMESTAMP"
+			property="creationDatetime" />
+		<result column="update_id" jdbcType="INTEGER" property="updateId" />
+		<result column="update_datetime" jdbcType="TIMESTAMP"
+			property="updateDatetime" />
+  </resultMap>
+    <!-- 航路事業者情報テーブルでairway_idに基づいて関連情報件数を検索 -->
+    <select id="countByAirwayId" resultType="int">
+        SELECT COUNT(*)
+        FROM airway_tenant_association
+        WHERE airway_id = #{airwayId}
+    </select>
+    <!-- 航路事業者情報テーブルでairway_idに基づいて事業者IDリストを検索 -->
+    <select id="findByAirwayId" resultType="java.lang.String">
+        SELECT operator_id 
+        FROM airway_tenant_association
+        WHERE airway_id = #{airwayId}
+    </select>
+	<!-- 重複チェック: airway_id と operatorIdList の組み合わせがすでに存在するか確認 -->
+    <select id="foundAirwayIdAndOperatorIds" resultMap="AirwayTenantAssociationMapper">
+        SELECT * 
+        FROM airway_tenant_association
+        WHERE airway_id = #{airwayId}
+          AND operator_id IN
+          <foreach item="item" index="index" collection="operatorIdList" open="(" separator="," close=")">
+            #{item}
+          </foreach>
+    </select>
+	<!-- 登録処理: operatorIdList に基づいて複数件を一度に登録 -->
+    <insert id="insertAirwayTenantAssociation">
+        INSERT INTO airway_tenant_association
+         (airway_id, operator_id, creation_id, creation_datetime, update_id, update_datetime)
+        VALUES
+        <foreach item="item" collection="operatorIdList" separator="," >
+            (#{airwayId}, #{item}, #{creationId}, CURRENT_TIMESTAMP, #{updateId}, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+	<!-- 上書き更新: airway_id と operator_id に基づきデータを削除 -->
+    <delete id="deleteByAirwayIdAndOperatorIds">
+        DELETE FROM airway_tenant_association
+        WHERE airway_id = #{airwayId}
+          AND operator_id IN
+          <foreach item="item" index="index" collection="operatorIdList" open="(" separator="," close=")">
+            #{item}
+          </foreach>
+    </delete>
+	<!-- 削除: airway_id に基づきデータを削除 -->
+    <delete id="deleteByAirwayId">
+        DELETE FROM airway_tenant_association
+        WHERE airway_id = #{airwayId}
+    </delete>
+</mapper>

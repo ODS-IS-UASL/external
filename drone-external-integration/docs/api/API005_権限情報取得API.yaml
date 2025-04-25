@@ -1,0 +1,142 @@
+openapi: 3.0.3
+info:
+  title: 権限情報取得API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /operatorRole:
+    get:
+      summary: 権限情報を取得する
+      deprecated: false
+      description: |-
+        指定された事業者IDに基づき、事業者権限情報を取得するAPIです。
+
+        指定された事業者IDに紐づく事業者権限情報が存在しない場合、エラーを返却します。
+
+      tags:
+        - ドローン航路システム
+      parameters:
+        - name: operatorId
+          in: query
+          description: 事業者ID
+          required: true
+          example: 70782784-568c-62df-4ff3-fb3e90051c00
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/droneRoute.ResponseTenantInfo'
+              examples:
+                oneData:
+                  summary: Success
+                  value:
+                    operatorId: 70782784-568c-62df-4ff3-fb3e90051c00
+                    operatorName: 事業者A
+                    roleList:
+                      - '1'
+                      - '2'
+                      - '3'
+          headers: {}
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseBadRequestError'
+          headers: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseNotFoundError'
+          headers: {}
+        '500':
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseInternalServerError'
+          headers: {}
+      security: []
+components:
+  schemas:
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: 指定されたパラメータが不正です。
+      required:
+        - code
+        - errorMessage
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: 指定された事業者ID(123e4567-e89b-12d3-a456-426614174000)は存在しません。
+      required:
+        - code
+        - errorMessage
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: 予期しないシステムエラーが発生しました。
+      required:
+        - code
+        - errorMessage
+    droneRoute.ResponseTenantInfo:
+      type: object
+      properties:
+        operatorId:
+          type: string
+          description: 事業者ID（UUID）
+          maxLength: 36
+          example: 123e4567-e89b-12d3-a456-426614174000
+        operatorName:
+          type: string
+          description: 事業者名
+          maxLength: 100
+          example: 関係機関A
+        roleList:
+          type: array
+          items:
+            type: string
+            description: 権限(1:航路運営事業者 2：運航事業者 3：関係者)
+            maxLength: 1
+            example:
+             - '2'
+             - '1'
+          description: 権限情報リスト
+      required:
+        - operatorId
+        - operatorName
+        - roleList
+  securitySchemes: {}
+

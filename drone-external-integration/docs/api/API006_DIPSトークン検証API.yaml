@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: ドローン航路システム API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /dipsTokenVerification:
+    post:
+      tags:
+        - ドローン航路システム
+      summary: DIPSトークンの検証
+      description: |-
+        システム内で保持しているトークンの検証を行う。
+        アクセストークンを保持していない場合、または有効期限が切れている場合には最新化を行う。
+        リフレッシュトークンの有効期限が切れている場合、エラーとする。
+        DIPSへのログイン時に本機能を呼び出す。
+        本APIはリクエストボディを必要としない。
+
+      responses:
+        "200":
+          description: アクセストークン検証成功。アクセストークンが有効。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.DipsAccessResponse"
+        "400":
+          description: |-
+            アクセストークン検証失敗。以下のいずれかのメッセージを参照してください。
+            - TokenInfo Not Found: アクセストークン情報なし
+            - Dips Refresh Token Expired: リフレッシュトークン有効期限切れ
+            - Updated TokenInfo Not Found: 更新されたトークン情報が取得できない
+            - Token Delete Failed: アクセストークンのリフレッシュ後、アクセストークンの削除に失敗
+            - ClientID Not Found: アクセストークンのリフレッシュ後、アクセストークンの保存時にIDの取得に失敗
+            - Token Delete Failed: アクセストークンのリフレッシュ後、アクセストークンの保存時に古いアクセストークンの削除に失敗
+            - Token Save Failed: アクセストークンのリフレッシュ後、アクセストークンの保存に失敗
+            - Access Token is Invalid: アクセストークンが不正
+            - Refresh Token is Invalid: リフレッシュトークンが不正
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.DipsAccessTokenException"
+              examples:
+                TokenInfoNotFound:
+                  summary: アクセストークン情報なし
+                  value:
+                    message: TokenInfo Not Found
+                DipsRefreshTokenExpired:
+                  summary: リフレッシュトークン有効期限切れ
+                  value:
+                    message: Dips Refresh Token Expired
+                UpdatedTokenInfoNotFound:
+                  summary: 更新されたトークン情報が取得できない
+                  value:
+                    message: Updated TokenInfo Not Found
+                TokenDeleteFailed:
+                  summary: DBのアクセストークン削除に失敗
+                  value:
+                    message: Token Delete Failed
+                ClientidNotFound:
+                  summary: IDの取得に失敗
+                  value:
+                    message: ClientID Not Found
+                TokenSaveFailed:
+                  summary: アクセストークンの保存に失敗
+                  value:
+                    message: Token Save Failed
+        "500":
+          description: システムエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.SystemError"
+      security: []
+
+components:
+  schemas:
+    droneRoute.DipsAccessResponse:
+      description: トークン検証成功（検証結果OK）時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          example: Token Verify Successfully
+
+    droneRoute.DipsAccessTokenException:
+      description: トークン検証失敗時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          description: エラーメッセージ
+
+    common.SystemError:
+      description: システムエラー時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          example: Error querying database

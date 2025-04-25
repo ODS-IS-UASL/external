@@ -1,0 +1,25 @@
+{
+  "name" : "太郎",
+  "information" : {
+    "age" : 20,
+    "address" : "東京",
+    "work" : "engineer",
+    "deleted" : false
+  },
+  "favoriteFoods" : [ {
+    "createdAt" : null,
+    "updatedAt" : null,
+    "japaneseFood" : "寿司",
+    "italianFood" : "pizza",
+    "isDeleted" : false
+  }, {
+    "createdAt" : null,
+    "updatedAt" : null,
+    "japaneseFood" : "天ぷら",
+    "italianFood" : "pasta",
+    "isDeleted" : false
+  } ],
+  "createdAt" : "20240822154455",
+  "updatedAt" : "20240822154455",
+  "deleted" : true
+}

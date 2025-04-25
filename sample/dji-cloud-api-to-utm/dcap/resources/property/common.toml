@@ -1,0 +1,40 @@
+[settings]
+
+[redis_settings]
+inmem_host = "localhost"
+inmem_port = 6379
+
+[redis_for_receive]
+receive_key1 = "receive-normal"
+receive_key_osd = "osd"
+receive_key_events = "events"
+receive_key_state = "state"
+receive_key_services_reply = "services_reply"
+
+[redis_for_send]
+send_key1 = "apu-send"
+send_key2 = "normal-send"
+send_key_cloud_api = "cloud-api-send"
+
+[redis_for_telemetry_manager_port_number_share]
+port_key = "telemetry-manager-port-number-share"
+
+[redis_for_network_check]
+network_check_result_key = "network-check-result"
+network_check_result_value_connected = "True"
+network_check_result_value_disconnected = "False"
+
+[redis_for_file_transport]
+file_infomation = "file-info"
+interrupt_infomation = "file-interrupt-info"
+
+[cloud_api]
+cloud_api_token_key = "<cloud-api-token>"
+cloud_api_workspace_id_key = "<cloud-api-workspace-id>"
+cloud_api_host_url = "cloud-api-server:6789"
+cloud_api_user = "<api_user_name>"
+cloud_api_password = "<api_user_password?"
+cloud_api_login_url = "/manage/api/v1/login"
+cloud_api_wayline_upload_url = "/wayline/api/v1/workspaces/{workspace_id}/waylines/file/upload"
+cloud_api_current_url = "/manage/api/v1/users/current"
+

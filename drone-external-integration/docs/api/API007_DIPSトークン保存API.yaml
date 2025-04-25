@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: ドローン航路システム API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /dipsToken:
+    put:
+      tags:
+        - ドローン航路システム
+      summary: DIPSトークン保存
+      description: |-
+        DIPSの「アクセストークン取得リクエスト」APIにて取得したトークン情報（アクセストークン、リフレッシュトークン等）をシステム内へ登録する機能。
+
+        使用するモデル：droneRoute.DipsTokenRequest
+      requestBody:
+        description: リクエストボディ
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/droneRoute.DipsTokenRequest"
+      responses:
+        "200":
+          description: アクセストークン保存成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.DipsAccessResponse"
+        "400":
+          description: |-
+            アクセストークン保存失敗。以下のいずれかのメッセージを参照してください。
+            - Token Delete Failed: アクセストークンの保存時に古いアクセストークンの削除に失敗
+            - ClientID Not Found: アクセストークンの保存時にIDの取得に失敗
+            - Token Save Failed: アクセストークンの保存に失敗
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.DipsAccessTokenException"
+              examples:
+                TokenDeleteFailed:
+                  summary: アクセストークン削除に失敗
+                  value:
+                    message: Token Delete Failed
+                ClientIDNotFound:
+                  summary: IDの取得に失敗
+                  value:
+                    message: ClientID Not Found
+                TokenSaveFailed:
+                  summary: アクセストークンの保存に失敗
+                  value:
+                    message: Token Save Failed
+        "500":
+          description: システムエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.SystemError"
+      security: []
+
+components:
+  schemas:
+    droneRoute.DipsTokenRequest:
+      description: DIPSトークン保存APIのリクエストデータ
+      type: object
+      properties:
+        clientId:
+          description: クライアントID
+          type: string
+          example: "exampleClientId"
+        accessToken:
+          description: DIPS API実行時に必要なトークン
+          type: string
+          example: "exampleAccessToken"
+        expiresIn:
+          description: accessTokenの有効時間(秒)
+          type: integer
+          example: 3600
+        refreshExpiresIn:
+          description: refreshTokenの有効時間(秒)
+          type: integer
+          example: 7200
+        refreshToken:
+          description: accessTokenの更新時に必要なトークン
+          type: string
+          example: "exampleRefreshToken"
+        tokenType:
+          description: 「bearer」固定
+          type: string
+          example: "bearer"
+        idToken:
+          description: IDトークン（JWT）
+          type: string
+          example: "exampleIdToken"
+        notBeforePolicy:
+          description: アクセストークンの有効性確認のための値
+          type: integer
+          example: 0
+        sessionState:
+          description: セッション状態
+          type: string
+          example: "exampleSessionState"
+        scope:
+          description: 「openid profile offline_access」固定
+          type: string
+          example: "openid profile offline_access"
+      required:
+        - clientId
+        - accessToken
+        - expiresIn
+        - refreshExpiresIn
+        - refreshToken
+        - tokenType
+        - idToken
+        - notBeforePolicy
+        - sessionState
+        - scope
+
+    droneRoute.DipsAccessResponse:
+      description: アクセストークン保存成功（検証結果OK）時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          example: Token Save Successfully
+
+    droneRoute.DipsAccessTokenException:
+      description: アクセストークン保存失敗時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          description: エラーメッセージ
+          example: Token Delete Failed
+
+    common.SystemError:
+      description: システムエラー時のレスポンスデータ
+      type: object
+      properties:
+        message:
+          type: string
+          example: Error querying database

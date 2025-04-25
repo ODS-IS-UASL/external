@@ -1,0 +1,36 @@
+spring.application:
+  name: drone-external-integration
+
+spring.profiles:
+  active: ${APPENV:dev}
+  default: dev
+  group:
+    dev: # ローカル環境
+      - h2
+      - dev
+      - healthcheck
+      - com-common-dev
+      - dips-web-client-template-dev
+      - external-integration-auth-common-dev
+      - external-integration-dips-notice-dev
+    test: # 検証環境
+      - test
+      - healthcheck
+      - dips-web-client-template-test
+      - external-integration-auth-common-test
+      - external-integration-dips-notice-test
+    prod: # 本番環境
+      - prod
+      - healthcheck
+      - com-common-prod
+      - dips-web-client-template-prod
+      - external-integration-auth-common-prod
+      - external-integration-dips-notice-prod
+
+server:
+  port: 8080
+  servlet:
+     context-path: /external
+
+#ドローン航路システムのAPIを実行する際の共通のベースパス
+drone-route-base-path : /api/v1

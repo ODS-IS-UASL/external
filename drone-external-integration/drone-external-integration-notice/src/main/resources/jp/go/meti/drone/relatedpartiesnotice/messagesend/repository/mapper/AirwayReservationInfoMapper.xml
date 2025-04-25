@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayReservationInfoMapper">
+  <select id="searchAirwayReservationInfo" resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity">
+    SELECT
+        DISTINCT ON(ar.airway_reserve_id, ays.airway_id) 
+        ar.airway_reserve_id AS airwayReserveId,
+        ar.operator_id AS operatorId,
+        ar.status AS status,
+        ar.reserved_at AS reservedAt,
+        ar.updated_at AS updatedAt,
+        ays.airway_id AS airwayId,
+        aw.airway_name AS airwayName
+    FROM
+        airway_reservation ar,
+        reservation_airway_association raa,
+        airway_section ays,
+        airway aw
+    WHERE
+        raa.airway_reserve_id = ar.airway_reserve_id
+        AND raa.airway_section_id = ays.airway_section_id
+        AND aw.airway_id = ays.airway_id
+        AND raa.airway_reserve_id = #{airwayReserveId}
+  </select>
+	<!--airway_idに基づいて航路予約情報取得-->
+	<select id="findAirwayReservationInfo"
+		resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity">
+	SELECT
+		distinct(ar.airway_reserve_id) AS airwayReserveId,
+		ar.operator_id AS operatorId,
+		ar.status AS status,
+		ar.reserved_at AS reservedAt,
+		ar.updated_at AS updatedAt,
+		ays.airway_id AS airwayId,
+		aw.airway_name AS airwayName
+	FROM
+		airway_reservation ar,
+		reservation_airway_association raa,
+		airway_section ays,
+		airway aw
+	WHERE ar.status IN ('1', '4')
+		AND raa.airway_reserve_id = ar.airway_reserve_id
+		AND raa.airway_section_id = ays.airway_section_id
+		AND aw.airway_id = ays.airway_id
+		AND ays.airway_id = #{airwayId}
+  </select>
+  
+</mapper>

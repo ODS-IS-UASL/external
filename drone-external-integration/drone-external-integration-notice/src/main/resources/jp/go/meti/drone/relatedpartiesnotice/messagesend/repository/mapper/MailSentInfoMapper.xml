@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.MailSentInfoMapper">
+
+	<!--　メール周知履歴インサート　-->
+	<insert id="insertMailSentInfo" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.MailSentInfoEntity">
+
+		INSERT INTO mail_sent_info(
+			operator_id,
+			message_type,
+			notification_target,
+			notification_type,
+			mail_detail,
+			sent_result,
+			failed_reason,
+			sent_datetime,
+			creation_id,
+			creation_datetime,
+			update_id,
+			update_datetime)
+		VALUES(
+			#{operatorId},
+			#{messageType},
+			#{notificationTarget},
+			#{notificationType},
+			#{mailDetail},
+			#{sentResult},
+			#{failedReason},
+			now(),
+			#{creationId},
+			CURRENT_TIMESTAMP,
+			#{updateId},
+			CURRENT_TIMESTAMP)
+	</insert>
+	
+
+</mapper>

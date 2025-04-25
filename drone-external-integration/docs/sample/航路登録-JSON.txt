@@ -1,0 +1,96 @@
+{
+	"airwayAdministratorId": "5b567fd-0205airwayAdministratorId",
+	"registeredAt": "2025-02-13T12:56:00.001Z",
+	"updatedAt": "2025-02-13T18:56:00.001Z",
+	"airway": {
+		"airwayId": "70782784-568c-62dfd-fb3e90051c00-U96",
+		"airwayName": "20250213航路テスト用サンプルA新規",
+		"flightPurpose": "20250213飛行目的",
+		"createdAt": "2025-02-07T12:56:00.001Z",
+		"updatedAt": "2025-02-07T18:56:00.001Z",
+		"droneList": [
+			1111001,
+			1111002,
+			1111003,
+			1111004
+		],
+		"airwayJunctions": [
+			{
+				"airwayJunctionId": "0b4890c6-7e4f-552c-2d6f-2f9ffa31770b",
+				"airwayJunctionName": "サンプルAジャンクション1",
+				"airways": [
+					{
+						"airway": {
+							"geometry": {
+								"type": "Polygon",
+								"coordinates": [
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									]
+								]
+							}
+						},
+						"deviation": {
+							"geometry": {
+								"type": "Polygon",
+								"coordinates": [
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									],
+									[
+										138.5555,
+										37.5555,
+										100.55
+									]
+								]
+							}
+						}
+					}
+				]
+			}
+		],
+		"airwaySections": [
+			{
+				"airwaySectionId": "a40cafb4-bce6-1a61-efeb-808d656a2191",
+				"airwaySectionName": "20250206テストAセクション1新規",
+				"airwayJunctionIds": [
+					"0b4890c6-7e4f-552c-2d6f-2f9ffa31770z",
+					"957c8410-0199-37cf-2e68-d0ef627b111x"
+				],
+				"droneportIds": [
+					"0b4890c6-7e4f-552c-2d6f-2f9ffa31770b",
+					"957c8410-0199-37cf-2e68-d0ef627b111d"
+				]
+			}
+		]
+	}
+}

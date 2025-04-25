@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayMapper">
+  <!--航路情報データを挿入-->
+  <insert id="insertAirway" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayEntity">
+	INSERT INTO airway (
+		airway_id, 
+		airway_name,
+		airway_administrator_id,
+		status, 
+		registered_at, 
+		updated_at, 
+		airway_created_at, 
+		airway_updated_at, 
+		flight_purpose, 
+		creation_id, 
+		creation_datetime, 
+		update_id, 
+		update_datetime) 
+		VALUES (
+			#{airwayId}, 
+			#{airwayName}, 
+			#{airwayAdministratorId},
+			#{status}, 
+			#{registeredAt}, 
+			#{updatedAt}, 
+			#{airwayCreatedAt}, 
+			#{airwayUpdatedAt}, 
+			#{flightPurpose}, 
+			#{creationId}, 
+			CURRENT_TIMESTAMP, 
+			#{updateId}, 
+			CURRENT_TIMESTAMP)
+  </insert>
+  <!--航路情報を更新-->
+  <update id="updateByAirwayId" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayEntity">
+   UPDATE airway SET
+	airway_name = #{airwayName},
+	airway_administrator_id = #{airwayAdministratorId},
+	status = #{status}, 
+	registered_at = #{registeredAt},
+	updated_at = #{updatedAt}, 
+	airway_created_at = #{airwayCreatedAt},
+	airway_updated_at = #{airwayUpdatedAt},
+	flight_purpose = #{flightPurpose},
+	update_id = #{updateId}, 
+	update_datetime = CURRENT_TIMESTAMP
+   WHERE
+    airway_id = #{airwayId};
+  </update>
+  <!--航路情報の処理区分を更新-->
+  <update id="updateStatusByAirwayId" parameterType="String">
+   UPDATE airway
+	   SET status = '2'
+   WHERE airway_id = #{airwayId};
+  </update>
+  
+  
+  <!--航路情報データを削除-->
+  <delete id="deleteAirway"  parameterType="String">
+   DELETE FROM airway WHERE airway_id = #{airwayId};
+  </delete>
+  
+  <!--航路IDと一致する航路情報を取得-->
+  <select id="getAirwayByAirwayId" resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayEntity">
+    SELECT
+     *
+    FROM
+     airway
+    WHERE
+     airway_id = #{airwayId};
+  </select>
+  
+</mapper>

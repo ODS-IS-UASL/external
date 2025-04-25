@@ -1,0 +1,26 @@
+spring:
+  mail:
+    host: localhost
+    port: 3025
+    username: username
+    password: secret
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+mail:
+  template:
+    fromAddress: test@test.jp
+    fromName: ドローン航路基盤システム
+  delivery-control:
+    # 送信抑止対象となるメールアドレス
+    exclude-addresses:
+      - exclude01@mail.address
+      - exclude02@mail.address
+      - exclude03@mail.address
+    # 送信制御の対象とならないメールのタイトルキー
+    delivery-all-subject-keys:
+      - mailFixedSubject      # 可変部なしの件名
+      - mailVariableSubject      # 可変部ありの件名

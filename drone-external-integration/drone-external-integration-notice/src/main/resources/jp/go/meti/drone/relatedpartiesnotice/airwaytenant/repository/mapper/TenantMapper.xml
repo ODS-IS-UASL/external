@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.airwaytenant.repository.mapper.TenantMapper">
+  <resultMap id="TenantMap" type="jp.go.meti.drone.relatedpartiesnotice.airwaytenant.repository.entity.TenantEntity">
+    <id column="operator_id" jdbcType="VARCHAR" property="operatorId" />
+    <result column="operator_name" jdbcType="VARCHAR" property="operatorName" />
+    <result column="user_type" jdbcType="CHAR" property="userType" />
+    <result column="notification_type" jdbcType="VARCHAR" property="notificationType" />
+    <result column="creation_id" jdbcType="INTEGER" property="creationId" />
+    <result column="creation_datetime" jdbcType="TIMESTAMP" property="creationDatetime" />
+    <result column="update_id" jdbcType="INTEGER" property="updateId" />
+    <result column="update_datetime" jdbcType="TIMESTAMP" property="updateDatetime" />
+  </resultMap>
+     <!-- 事業者情報テーブルから複数IDで関連パーティを検索 -->
+    <select id="findOperatorByIds" resultMap="TenantMap">
+        SELECT * 
+        FROM tenant
+        WHERE operator_id IN
+        <foreach item="id" collection="operatorIdList" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

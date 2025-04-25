@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /flightProhibitedAreaReceiver:
+    post:
+      tags:
+        - ドローン航路システム
+      summary: 飛行禁止エリア取得
+      description: |-
+        DIPS2.0から指定した条件に一致する飛行禁止エリア情報を取得する。
+
+        使用するモデル：FlightProhibitedAreaInfoRequest
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlightProhibitedAreaInfoRequest"
+            examples:
+              latLonRangeAndTimeRange:
+                summary: 検索範囲と日時範囲指定する場合
+                value:
+                  features:
+                    coordinates:
+                      - - 139.42
+                        - 35.68
+                      - - 139.48
+                        - 35.68
+                      - - 139.48
+                        - 35.6
+                      - - 139.42
+                        - 35.6
+                  startTime: 20241218 1200
+                  finishTime: 20241218 2359
+      responses:
+        "200":
+          description: DIPS2.0から取得した飛行禁止エリア情報を返却
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.FlightProhibitedAreaResponse"
+              examples:
+                overOneData:
+                  summary: 1件以上取得成功
+                  value:
+                    flightProhibitedAreaInfo:
+                      - flightProhibitedAreaId: 20221105_FISSikou0015
+                        name: 東京国際空港 空港の区域
+                        range:
+                          type: Polygon
+                          coordinates:
+                            - - 139.779031
+                              - 35.569748
+                            - - 139.782776
+                              - 35.574085
+                            - - 139.77099
+                              - 35.56901
+                            - - 139.779031
+                              - 35.569748
+                        detail: 小型無人機等飛行禁止法に基づく飛行禁止空域
+                        url: https://www.mlit.go.jp/koku/koku_tk2_000023.html
+                        flightProhibitedAreaTypeId: 5
+                        startTime: 20210101 0000
+                        finishTime: 99991231 2359
+                      - flightProhibitedAreaId: 20221105_FISSikou0016
+                        name: 東京国際空港 対象施設周辺地域
+                        range:
+                          type: Circle
+                          center:
+                            - 139.829865
+                            - 35.539071
+                          radius: 500
+                        detail: 小型無人機等飛行禁止法に基づく飛行禁止空域
+                        url: https://www.mlit.go.jp/koku/koku_tk2_000023.html
+                        flightProhibitedAreaTypeId: 6
+                        startTime: 20210101 0000
+                        finishTime: 99991231 2359
+                    totalCount: 2
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+      
+components:
+  schemas:
+    FlightProhibitedAreaInfoRequest:
+      required:
+        - features
+      type: object
+      properties:
+        features:
+          description: "検索範囲（緯度、経度） "
+          type: object
+          properties:
+            coordinates:
+              description: "ジオメトリ（構成点） "
+              type: array
+              items:
+                description: 経度. 緯度リスト
+                type: array
+                items:
+                  type: number
+                  format: double
+          required:
+            - coordinates
+        startTime:
+          type: string
+          description: 検索期間(FROM) <yyyyMMdd HHmm形式>
+          example: 20241201 0000
+        finishTime:
+          type: string
+          description: 検索期間(TO) <yyyyMMdd HHmm形式>
+          example: 20241201 2359
+
+    droneRoute.FlightProhibitedAreaResponse:
+      type: object
+      properties:
+        flightProhibitedAreaInfo:
+          type: array
+          description: |- 
+            飛行禁止エリア情報リスト
+            取得結果が0件の場合空リストとなる。
+          items:
+            $ref: "#/components/schemas/droneRoute.FlightProhibitedAreaInfo"
+        totalCount:
+          type: integer
+          description: 取得した総件数
+          example: 2
+      required:
+        - flightProhibitedAreaInfo
+        - totalCount
+
+    droneRoute.FlightProhibitedAreaInfo:
+      type: object
+      properties:
+        flightProhibitedAreaId:
+          type: string
+          description: 飛行禁止エリアID
+          maxLength: 64
+          example: "20221105_FISSikou0015"
+        name:
+          type: string
+          description: 飛行禁止エリア名
+          maxLength: 128
+          example: "東京国際空港 空港の区域"
+        range:
+          $ref: "#/components/schemas/droneRoute.Range"
+          description: 飛行禁止エリア範囲
+        detail:
+          type: string
+          description: 説明詳細
+          example: "小型無人機等飛行禁止法に基づく飛行禁止空域"
+        url:
+          type: string
+          description: 説明URL
+          maxLength: 255
+          example: "https://www.mlit.go.jp/koku/koku_tk2_000023.html"
+        flightProhibitedAreaTypeId:
+          type: integer
+          description: 飛行禁止エリア種別
+          maxLength: 2
+          example: 5
+        startTime:
+          type: string
+          description: 有効期限(FROM) <yyyyMMdd HHmm形式>
+          example: "20210101 0000"
+          maxLength: 13
+        finishTime:
+          type: string
+          description: 有効期限(TO) <yyyyMMdd HHmm形式>
+          example: "20210101 2359"
+          maxLength: 13
+      required:
+        - flightProhibitedAreaId
+        - name
+        - range
+        - flightProhibitedAreaTypeId
+        - startTime
+        - finishTime
+
+    droneRoute.Range:
+      description: |-
+        飛行禁止エリア範囲  
+        ※1 typeが「Polygon」の場合、coordinatesは必須項目となる。  
+        ※2 typeが「Circle」の場合、center、radiusは必須項目となる。
+      type: object
+      properties:
+        type:
+          type: string
+          description: ジオメトリタイプ
+          maxLength: 7
+          example: "Polygon"
+        center:
+          description: ジオメトリ（中心点）
+          $ref: "#/components/schemas/droneRoute.Center"
+        radius:
+          type: number
+          description: 半径
+          format: double
+          example: 30.00
+        coordinates:
+          description: "ジオメトリ（構成点） "
+          type: array
+          items:
+            description: 経度. 緯度リスト
+            type: array
+            items:
+              type: number
+              format: double
+      required:
+        - type
+
+    droneRoute.Center:
+      description: ジオメトリ（中心点）
+      type: array
+      items:
+        type: number
+        description: 緯度、経度
+        format: double
+
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "検索範囲は必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage

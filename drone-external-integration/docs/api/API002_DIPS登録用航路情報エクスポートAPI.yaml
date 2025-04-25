@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /dipsAirwayExport:
+    post:
+      tags:
+        - ドローン航路システム
+      summary: DIPS登録用航路情報エクスポート
+      description: |-
+        指定された航路IDで航路情報を取得し、DIPS2.0へ登録できるGeoJSON形式に加工して、ZIP形式のファイルを返却する。  
+        複数の航路を指定された場合、航路単位でGeoJSONファイルへ加工し、1つにまとめたZIP形式のファイルを返却する。
+
+        使用するモデル：droneRoute.RequestAirwayIdList
+      requestBody:
+        description: Request Body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/droneRoute.RequestAirwayIdList"
+      responses:
+        "200":
+          description: ZIPファイルのダウンロードが成功
+          headers:
+            Content-Disposition:
+              description: コンテンツがダウンロードファイルであることを示します
+              schema:
+                type: string
+                example: 'attachment; filename="example.zip"'
+            Content-Type:
+              description: 送信されるファイルのMIMEタイプです
+              schema:
+                type: string
+                example: "application/octet-stream"
+            Content-Length:
+              description: ZIPファイルのバイト数です
+              schema:
+                type: integer
+                example: 102400 # 例として100KB
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                example: "UEsDBBQAAAAIAIlBME5hRUUwY...（バイナリデータの一部）"
+        "400":
+          description: |
+            Bad Request パラメーターに誤りがある場合に返却する。具体的には以下のケースを想定する。  
+            - 必須指定されているパラメータが指定されていない場合  
+            - 指定されたパラメーターのデータ型が異なる場合  
+            - 指定されたパラメーターの範囲が許容範囲外である場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "404":
+          description: Not Found 指定した航路情報が取得できない場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseNotFoundError"
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+        
+components:
+  schemas:
+    droneRoute.RequestAirwayIdList:
+      description: 登録対象の航路関係者情報
+      type: object
+      properties:
+        airwayIdList:
+          type: array
+          description: "航路IDリスト"
+          items:
+            type: string
+            description: "航路ID"
+            example: "cff38601-d33d-89b5-8b8e-ed8a3c5a187c"
+          minItems: 1 # 1つ以上の要素が必要であることを示す
+      required:
+        - airwayIdList
+
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "航路IDは必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "指定された航路情報は取得できませんでした。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage

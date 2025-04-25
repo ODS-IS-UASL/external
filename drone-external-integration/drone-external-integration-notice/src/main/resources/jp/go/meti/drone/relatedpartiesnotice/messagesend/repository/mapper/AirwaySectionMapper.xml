@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwaySectionMapper">
+  <!--航路区画情報データを挿入-->
+  <insert id="insertAirwaySection" parameterType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwaySectionEntity">
+	INSERT INTO airway_section (
+		airway_id, 
+		airway_section_id, 
+		airway_section_name,
+		creation_id,
+		creation_datetime, 
+		update_id, 
+		update_datetime) 
+		VALUES (
+			#{airwayId}, 
+			#{airwaySectionId}, 
+			#{airwaySectionName},
+			#{creationId}, 
+			CURRENT_TIMESTAMP, 
+			#{updateId}, 
+			CURRENT_TIMESTAMP)
+  </insert>
+   <!--航路区画情報データを削除-->
+  <delete id="deleteAirwaySection"  parameterType="String">
+   DELETE FROM airway_section 
+   WHERE airway_id = #{airwayId} 
+  </delete>
+  
+</mapper>

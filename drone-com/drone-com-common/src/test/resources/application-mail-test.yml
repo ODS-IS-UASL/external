@@ -1,0 +1,21 @@
+spring:
+  freemarker:
+    template-loader-path: classpath:/templates/
+  mail:
+    host: localhost
+    port: 3025
+    username: username
+    password: secret
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    test-connection: false
+mail:
+  template:
+    fromAddress: test@test.jp
+    fromName: ドローン航路基盤システム
+
+

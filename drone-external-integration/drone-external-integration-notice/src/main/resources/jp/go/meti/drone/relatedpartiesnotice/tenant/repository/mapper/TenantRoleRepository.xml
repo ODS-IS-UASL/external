@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="jp.go.meti.drone.relatedpartiesnotice.tenant.repository.mapper.TenantRoleRepository">
+
+	<select id="selectByPrimaryKey"
+		resultType="jp.go.meti.drone.relatedpartiesnotice.tenant.repository.entity.TenantRoleEntity">
+		select * from tenant_role
+		 <where>
+			<if test="operatorId !=null and operatorId !='' ">
+				and operator_id=#{operatorId}
+			</if>
+		</where>
+
+
+	</select>
+</mapper>

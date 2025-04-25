@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  description: ''
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /operator:
+    get:
+      summary: 事業者情報一覧取得
+      deprecated: false
+      description: |-
+        事業者情報を一覧取得する。
+
+        事業者IDを指定しない場合、事業者情報を一覧で取得する。
+
+        事業者IDを指定した場合、指定した事業者情報を1件取得する。
+
+        航路IDを指定した場合、指定した航路に紐づく事業者情報を取得する。
+
+        クエリパラメータを指定する場合は、事業者ID or 航路IDのどちらかを指定してください。
+
+      tags:
+        - ドローン航路システム
+      parameters:
+        - name: operatorId
+          in: query
+          description: 事業者ID
+          required: false
+          example: 123e4567-e89b-12d3-a456-426614174000
+          schema:
+            type: string
+            maxLength: 36
+        - name: airwayId
+          in: query
+          description: 航路ID
+          required: false
+          example: 123e4567-e89b-12d3-a456-426614174000
+          schema:
+            type: string
+            maxLength: 36
+      responses:
+        '200':
+          description: '事業者情報を返却'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/droneRoute.ResponseOperatorList'
+                description: 事業者情報リスト
+              examples:
+                overOneData:
+                  summary: 一覧取得成功
+                  value:
+                    operatorList:
+                      - operatorId: 123e4567-e89b-12d3-a456-426614174000
+                        operatorName: 関係機関A
+                        notificationType: '1'
+                        roleList:
+                          - '1'
+                          - '2'
+                        notificationTargetList:
+                          - related@example.co.jp
+                        linkAirwayList:
+                          - 123e4567-e89b-12d3-a456-426614174000
+                      - operatorId: 123e4567-e89b-12d3-a456-426614174001
+                        operatorName: 関係機関B
+                        notificationType: '1'
+                        roleList:
+                          - '3'
+                        notificationTargetList:
+                          - related@example.co.jp
+                        linkAirwayList:
+                          - 123e4567-e89b-12d3-a456-426614174000
+                oneData:
+                  summary: 1件取得成功
+                  value:
+                    operatorList:
+                      - operatorId: 123e4567-e89b-12d3-a456-426614174002
+                        operatorName: 関係機関C
+                        notificationType: '1'
+                        roleList:
+                          - '3'
+                        notificationTargetList:
+                          - related@example.co.jp
+                        linkTopAirwayList: []
+          headers: {}
+        '400':
+          description: 'Bad Request'
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: '#/components/schemas/common.ResponseBadRequestError'
+          headers: {}
+        '404':
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: '#/components/schemas/common.ResponseNotFoundError'
+          headers: {}
+        '500':
+          description: 'Internal Server Error サーバーエラー'
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: '#/components/schemas/common.ResponseInternalServerError'
+          headers: {}
+      security: []
+components:
+  schemas:
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            指定されたパラメータが不正です。
+      required:
+        - code
+        - errorMessage
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            予期しないシステムエラーが発生しました。
+      required:
+        - code
+        - errorMessage
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            指定された事業者ID(123e4567-e89b-12d3-a456-426614174000)は存在しません。
+      required:
+        - code
+        - errorMessage
+    droneRoute.ResponseOperatorList:
+      description: 事業者情報リスト
+      type: object
+      properties:
+        operatorList:
+          type: array
+          items:
+            $ref: '#/components/schemas/droneRoute.ResponseOperatorInfo'
+      required:
+        - operatorList
+    droneRoute.ResponseOperatorInfo:
+      type: object
+      properties:
+        operatorId:
+          type: string
+          description: 事業者ID（UUID）
+          maxLength: 36
+          example:
+            123e4567-e89b-12d3-a456-426614174000
+        operatorName:
+          type: string
+          description: 事業者名
+          maxLength: 100
+          example:
+            関係機関A
+        notificationType:
+          type: string
+          description: 周知方法(1：メール、2：API)
+          maxLength: 1
+          example:
+            '1'
+        roleList:
+          type: array
+          description: 権限情報リスト
+          items:
+            type: string
+            description: 権限(1:航路運営事業者 2：運航事業者 3：関係者)
+            maxLength: 1
+            example:
+              - '2'
+              - '1'
+        notificationTargetList:
+          type: array
+          items:
+            type: string
+            description: 連絡先
+            maxLength: 254
+            example:
+              related@example.co.jp
+          description: 連絡先情報リスト
+        linkAirwayList:
+          type: array
+          items:
+            type: string
+            description: 航路ID
+            maxLength: 36
+            example:
+              123e4567-e89b-12d3-a456-426614174000
+          description: 紐づき航路情報リスト
+      required:
+        - operatorId
+        - operatorName
+        - notificationType
+        - notificationTargetList
+        - roleList
+  securitySchemes: {}

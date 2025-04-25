@@ -49,14 +49,12 @@ Classic 5.18.4
 
 ```sh
 $ docker pull apache/activemq-classic:5.18.4
-$ docker pull apache/activemq-classic:latest
 $ docker images
 ```
 
 ※`docker images`による表示例
 ```sh
 REPOSITORY                TAG       IMAGE ID       CREATED        SIZE
-apache/activemq-classic   latest    09c653440eb3   3 months ago   380MB
 apache/activemq-classic   5.18.4    5f8992e89b91   3 months ago   370MB
 ```
 

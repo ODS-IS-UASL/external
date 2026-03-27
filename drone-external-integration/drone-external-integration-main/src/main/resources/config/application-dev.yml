@@ -29,17 +29,17 @@ mqtt:
   send-client-id: ${MQTT_CLIENT:mqttSampleClient}
   qos: 2
   retry-cnt-max: 2
-  ssl: false
+  ssl: ${MQTT_SSL_FLG:false}
   clean-session: true
   time-to-wait: 0
   reconnect: true
   connect-timeout: 10
   client:
     mqttsDockerClient:
-      base-url: tcp://${MQTT_HOSTNAME:localhost}:${MQTT_PORT:1883}
+      base-url: ${MQTT_HOSTNAME:tcp://localhost}:${MQTT_PORT:1883}
       username: ${MQTT_USERNAME:admin}
       password: ${MQTT_PASSWORD:admin}
     noticeMqttClient:
-      base-url: tcp://${MQTT_HOSTNAME:localhost}:${MQTT_PORT:1883}
+      base-url: ${MQTT_HOSTNAME:tcp://localhost}:${MQTT_PORT:1883}
       username: ${MQTT_USERNAME:admin}
       password: ${MQTT_PASSWORD:admin}

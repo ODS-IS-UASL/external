@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  description: ''
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /reserveNotification:
+    get:
+      summary: 航路予約関係者
+      deprecated: false
+      description: |-
+        航路予約関係者情報リストを取得する。
+
+      tags:
+        - ドローン航路システム
+      parameters:
+        - name: airwayReserveId
+          in: query
+          description: 航路予約ID
+          required: true
+          example: 123e4567-e89b-12d3-a456-426614174000
+          schema:
+            type: string
+            maxLength: 36
+      responses:
+        '200':
+          description: '航路予約関係者情報リストを返却'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/droneRoute.ResponseNotificationInfoList'
+          headers: {}
+        '400':
+          description: 'Bad Request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseBadRequestError'
+          headers: {}
+        '404':
+          description: 'Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseNotFoundError'
+          headers: {}
+        '500':
+          description: 'Internal Server Error サーバーエラー'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/common.ResponseInternalServerError'
+          headers: {}
+      security: []
+components:
+  schemas:
+    droneRoute.ResponseNotificationInfoList:
+      type: array
+      description: 航路予約関係者情報リスト
+      items:
+        $ref: '#/components/schemas/droneRoute.ResponseNotificationInfo'
+    droneRoute.ResponseNotificationInfo:
+      type: object
+      description: 航路予約関係者情報
+      properties:
+        operatorId:
+          type: string
+          description: 事業者ID（UUID）
+          maxLength: 36
+          example: 123e4567-e89b-12d3-a456-426614174000
+        operatorName:
+          type: string
+          description: 事業者名
+          maxLength: 100
+          example: 関係機関A
+        relatedCategory:
+          type: string
+          description: 関係者のカテゴリー
+          maxLength: 1
+          example: 1:警察 2:消防 3:ドクターヘリ　※その他ユーザが任意に定義したコード値も可能
+        notificationEmail:
+          type: string
+          description: 周知先メールアドレス
+          maxLength: 254
+          example: related@example.co.jp
+        notificationPhone:
+          type: string
+          description: 電話番号
+          maxLength: 20
+          example: 080-8888-8888
+      required:
+        - operatorId
+        - operatorName
+        - relatedCategory
+        - notificationEmail
+
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            指定されたパラメータが不正です。
+      required:
+        - code
+        - errorMessage
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            指定された事業者ID(123e4567-e89b-12d3-a456-426614174000)は存在しません。
+      required:
+        - code
+        - errorMessage
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example:
+            500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example:
+            予期しないシステムエラーが発生しました。
+      required:
+        - code
+        - errorMessage
+
+  securitySchemes: {}

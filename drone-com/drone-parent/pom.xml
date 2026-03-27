@@ -70,11 +70,11 @@
 				<version>3.3.2</version>
 			</dependency>
 			<dependency>
- 				<groupId>com.h2database</groupId>
- 				<artifactId>h2</artifactId>
-	 				<version>2.3.230</version>
- 				<scope>runtime</scope>
- 			</dependency>
+				<groupId>com.h2database</groupId>
+				<artifactId>h2</artifactId>
+				<version>2.3.230</version>
+				<scope>runtime</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.postgresql</groupId>
 				<artifactId>postgresql</artifactId>
@@ -186,6 +186,19 @@
 				<artifactId>jakarta.jms-api</artifactId>
 				<version>3.1.0</version>
 			</dependency>
+
+	        <!-- Apache POI -->
+	        <dependency>
+	            <groupId>org.apache.poi</groupId>
+	            <artifactId>poi</artifactId>
+	            <version>5.4.1</version>
+	        </dependency>
+	
+	        <dependency>
+	            <groupId>org.apache.poi</groupId>
+	            <artifactId>poi-ooxml</artifactId>
+	            <version>5.4.1</version>
+	        </dependency>
 			
 			<!-- JSON変換関連 -->
 			<dependency>

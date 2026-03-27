@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jp.go.meti.drone.com.common.util.MessageUtils;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.AirwayInfo;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.AirwaySection;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslInfo;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslSections;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayEntity;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwaySectionEntity;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayMapper;
@@ -36,32 +36,33 @@ public class AirwayService {
     /**
      * 受信した航路情報、航路区画情報を保存する。
      * 
-     * @param airwayInfo 航路情報
+     * @param uaslInfo 航路情報
+     * @param uaslId 航路ID
      * 
      */
     @Transactional
-    public void saveAirway(AirwayInfo airwayInfo, String airwayId) {
+    public void saveAirway(UaslInfo uaslInfo, String uaslId) {
 
     	AirwayEntity airway = new AirwayEntity();
     	//日時フォーマットが正しいかチェックする。
-    	LocalDateTime registeredAt = convertTimestamp(airwayInfo.getRegisteredAt(), "RegisteredAt");
+    	LocalDateTime registeredAt = convertTimestamp(uaslInfo.getRegisteredAt(), "RegisteredAt");
     	//更新日時に値がある場合は変換する。
     	LocalDateTime updatedAt = null;
-    	if(airwayInfo.getUpdatedAt() != null && !airwayInfo.getUpdatedAt().isEmpty() ) {
-    		updatedAt = convertTimestamp(airwayInfo.getUpdatedAt(), "UpdatedAt");
+    	if(uaslInfo.getUpdatedAt() != null && !uaslInfo.getUpdatedAt().isEmpty() ) {
+    		updatedAt = convertTimestamp(uaslInfo.getUpdatedAt(), "UpdatedAt");
     	}
-    	if(airwayInfo.getAirway() != null) {
-    		LocalDateTime airwayCreatedAt = convertTimestamp(airwayInfo.getAirway().getCreatedAt(), "AirwayCreatedAt");
-    		LocalDateTime airwayUpdatedAt = convertTimestamp(airwayInfo.getAirway().getUpdatedAt(), "AirwayUpdatedAt");
-    		airway.setAirwayId(airwayInfo.getAirway().getAirwayId());
-    		airway.setAirwayName(airwayInfo.getAirway().getAirwayName());
-    		airway.setAirwayAdministratorId(airwayInfo.getAirwayAdministratorId());
+    	if(uaslInfo.getUasl() != null) {
+    		LocalDateTime airwayCreatedAt = convertTimestamp(uaslInfo.getUasl().getCreatedAt(), "AirwayCreatedAt");
+    		LocalDateTime airwayUpdatedAt = convertTimestamp(uaslInfo.getUasl().getUpdatedAt(), "AirwayUpdatedAt");
+    		airway.setAirwayId(uaslInfo.getUasl().getUaslId());
+    		airway.setAirwayName(uaslInfo.getUasl().getUaslName());
+    		airway.setAirwayAdministratorId(uaslInfo.getUaslAdministratorId());
     		airway.setStatus("1");
     		airway.setRegisteredAt(registeredAt);
     		airway.setUpdatedAt(updatedAt == null? registeredAt : updatedAt);
     		airway.setAirwayCreatedAt(airwayCreatedAt);
     		airway.setAirwayUpdatedAt(airwayUpdatedAt);
-    		airway.setFlightPurpose(airwayInfo.getAirway().getFlightPurpose());
+    		airway.setFlightPurpose(uaslInfo.getUasl().getFlightPurpose());
     		airway.setCreationId(userId);
     		airway.setUpdateId(userId);
     		//航路IDをもとに航路情報を取得する
@@ -78,19 +79,19 @@ public class AirwayService {
 
     		//すでに存在する航路区画情報は削除する。
     		airwaySectionMapper.deleteAirwaySection(airway.getAirwayId());
-    		//航路区画の件数分、繰り返し航路区画情報を登録する。
-    		for(AirwaySection airwaySection : airwayInfo.getAirway().getAirwaySections()) {
-    			AirwaySectionEntity airwaySectionEntity = new AirwaySectionEntity();
-    			airwaySectionEntity.setAirwayId(airwayInfo.getAirway().getAirwayId());
-    			airwaySectionEntity.setAirwaySectionId(airwaySection.getAirwaySectionId());
-    			airwaySectionEntity.setAirwaySectionName(airwaySection.getAirwaySectionName());
-    			airwaySectionEntity.setCreationId(userId);
-    			airwaySectionEntity.setUpdateId(userId);
-    			airwaySectionMapper.insertAirwaySection(airwaySectionEntity);
+            //航路区画の件数分、繰り返し航路区画情報を登録する。
+            for(UaslSections uaslSection : uaslInfo.getUasl().getUaslSections()) {
+                AirwaySectionEntity airwaySectionEntity = new AirwaySectionEntity();
+                airwaySectionEntity.setAirwayId(uaslInfo.getUasl().getUaslId());
+                airwaySectionEntity.setAirwaySectionId(uaslSection.getUaslSectionId());
+                airwaySectionEntity.setAirwaySectionName(uaslSection.getUaslSectionName());
+                airwaySectionEntity.setCreationId(userId);
+                airwaySectionEntity.setUpdateId(userId);
+                airwaySectionMapper.insertAirwaySection(airwaySectionEntity);
     		}
     	}else {
-    		airwayMapper.updateStatusByAirwayId(airwayId);
-    		airwaySectionMapper.deleteAirwaySection(airwayId);
+            airwayMapper.updateStatusByAirwayId(uaslId);
+            airwaySectionMapper.deleteAirwaySection(uaslId);
     	}
 
     }	

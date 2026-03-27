@@ -1,3 +1,11 @@
+/*
+* 開発システム： ドローン航路基盤システム
+* ファイル名： DipsAirwayExportServiceImpl.java
+* 著作権： Copyright (C) 202X-20XX,  経済産業省
+* 会社名： NTT DATA Corporation
+* 更新日： $Date$
+*
+*/
 package jp.go.meti.drone.dips.service.export;
 
 import java.io.ByteArrayOutputStream;
@@ -25,10 +33,10 @@ import com.esri.core.geometry.SpatialReference;
 import com.esri.core.geometry.WktImportFlags;
 
 import jp.go.meti.drone.com.common.util.MessageUtils;
-import jp.go.meti.drone.dips.apimodel.export.AirwayEntity;
-import jp.go.meti.drone.dips.apimodel.export.AirwayJunctionsEntity;
-import jp.go.meti.drone.dips.apimodel.export.AirwaySectionsEntity;
-import jp.go.meti.drone.dips.apimodel.export.AirwaysEntity;
+import jp.go.meti.drone.dips.apimodel.export.UaslTopEntity;
+import jp.go.meti.drone.dips.apimodel.export.UaslPointEntity;
+import jp.go.meti.drone.dips.apimodel.export.UaslSectionsEntity;
+import jp.go.meti.drone.dips.apimodel.export.UaslEntity;
 import jp.go.meti.drone.dips.model.commonmodel.CommonResponseInternalServerError;
 import jp.go.meti.drone.dips.model.commonmodel.CommonResponseNotFoundError;
 import jp.go.meti.drone.dips.model.export.RequestAirwayIdList;
@@ -86,7 +94,7 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 				// ZIPファイルにエントリを追加
 			    for (AirwayIdAndInfoDto dto : routePlanningInfoList) {
 			        // GeoJSONファイル形式に加工して、取得する
-			        String[] routePlanningInfoGeoJson = getGeoJson(dto.getAirwayEntity(), dto.getAirwayId());
+			        String[] routePlanningInfoGeoJson = getGeoJson(dto.getUaslTopEntity(), dto.getAirwayId());
 			        if (routePlanningInfoGeoJson.length > 0) {
 			            ZipEntry entry = new ZipEntry(routePlanningInfoGeoJson[0]);
 			            zipOutputStream.putNextEntry(entry);
@@ -138,7 +146,7 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 			if (getResult.getStatusCode() == 200) {
 			    AirwayIdAndInfoDto dto = new AirwayIdAndInfoDto();
 			    dto.setAirwayId(airwayId);
-			    dto.setAirwayEntity(getResult.getAirwayEntity());
+			    dto.setUaslTopEntity(getResult.getUaslTopEntity());
 				routePlanningInfoList.add(dto);
 			} else {
 				// 航路情報がない場合
@@ -155,17 +163,17 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 	 * @param planningInfoJson 航路情報
 	 * @return 航路GeoJSON情報
 	 */
-	private String[] getGeoJson(AirwayEntity getAirwayInfo, String airwayId){
+	private String[] getGeoJson(UaslTopEntity getUaslInfo, String uaslId){
 		try {
 			// 取得した航路情報がない場合
-			if (getAirwayInfo.getAirway() == null || getAirwayInfo.getAirway().getAirways().isEmpty()) {
+			if (getUaslInfo.getUasl() == null || getUaslInfo.getUasl().get(0).getUasl() == null) {
 				// 航路情報がない場合
-				String errorMessage = MessageUtils.getMessage("DR002E005", airwayId);
+				String errorMessage = MessageUtils.getMessage("DR002E005", uaslId);
 				log.error(errorMessage);
 				String[] rst = {};
 				return rst;
 			} else {
-		        String topAirwayName = getAirwayInfo.getAirway().getAirways().get(0).getAirwayName();
+		        String topUaslName = getUaslInfo.getUasl().get(0).getUasl().getUaslName();
 		        
 				// 結果を格納するためのJSONオブジェクト
 				JSONObject result = new JSONObject(new LinkedHashMap<>());
@@ -175,7 +183,7 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 				JSONObject feature = new JSONObject(new LinkedHashMap<>());
 				feature.put("type", FEATURE);
 				// 新しいポリゴンの座標を格納するリスト
-				String geom = createGeoJson(getAirwayInfo.getAirway().getAirways());
+				String geom = createGeoJson(getUaslInfo.getUasl().get(0).getUasl());
                 if(geom.isEmpty()) {
                     String[] rst = {};
                     return rst;
@@ -184,7 +192,7 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 				features.put(feature);
 				result.put("features", features);
 				// 結果を返却
-				String[] rst = { topAirwayName + "_" + airwayId + ".geojson", result.toString(2) };
+				String[] rst = { topUaslName + "_" + uaslId + ".geojson", result.toString(2) };
 				return rst;
 			}
 		} catch (Exception e) {
@@ -196,97 +204,114 @@ public class DipsAirwayExportServiceImpl implements DipsAirwayExportService {
 	/**
      * セクションのポリゴンを結合して1つのポリゴン情報として返却する
      * 
-     * @param airways
+     * @param uasls
      * @return 結合した航路のポリゴン情報
      */
-	private String createGeoJson(List<AirwaysEntity> airways) {
+	private String createGeoJson(UaslEntity airwayDetail) {
 	    String geoJson = "";
 	    List<Geometry> polygons = new ArrayList<>();
-        //1つの航路に紐づく航路情報件数分繰り返す。項目：airways
-        for(AirwaysEntity airwayDetail: airways) {
-            //セクション件数分、繰り返し以下の処理を実行する。項目：airwaySections
-            for(AirwaySectionsEntity airwaySection : airwayDetail.getAirwaySections()) {
-                
-                //セクション情報がない場合は、異常なため破棄する。
-                if(airwaySection.getAirwayJunctionIds().size() < 2) {
-                    log.info("セクション情報がないため、スキップします。");
-                    continue;
-                }
-                //セクションの1つ目の航路点IDを取得する。
-                String airwayPoint1 = airwaySection.getAirwayJunctionIds().get(0);
-                //ジャンクション情報から1つ目の航路点IDと一致するジャンクション情報を取得する。
-                AirwayJunctionsEntity point1Info = airwayDetail.getAirwayJunctions().stream()
-                    .filter(junction -> airwayPoint1.equals(junction.getAirwayJunctionId())).findFirst().orElse(null);
+		// セクション件数分、繰り返し以下の処理を実行する。項目：uaslSections
+		for (UaslSectionsEntity uaslSection : airwayDetail.getUaslSections()) {
 
-                //セクションの2つ目の航路点IDを取得する。
-                String airwayPoint2 = airwaySection.getAirwayJunctionIds().get(1);
-                //ジャンクション情報から2つ目の航路点IDと一致するジャンクション情報を取得する。
-                AirwayJunctionsEntity point2Info = airwayDetail.getAirwayJunctions().stream()
-                    .filter(junction -> airwayPoint2.equals(junction.getAirwayJunctionId())).findFirst().orElse(null);
+			// セクション情報がない場合は、異常なため破棄する。
+			if (uaslSection.getUaslPointIds().size() < 2) {
+				log.info("セクション情報がないため、スキップします。");
+				continue;
+			}
+			// セクションの1つ目の航路点IDを取得する。
+			String airwayPoint1 = uaslSection.getUaslPointIds().get(0);
+			// 航路点情報から1つ目の航路点IDと一致する航路点情報を取得する。
+			UaslPointEntity point1Info = airwayDetail.getUaslPoints().stream()
+					.filter(uaslPoints -> airwayPoint1.equals(uaslPoints.getUaslPointId())).findFirst().orElse(null);
 
-                //ジャンクション情報が取得できない場合、異常なため破棄する。
-                if(point1Info != null && point2Info != null) {
-                    //ジャンクション1,2より、ポリゴンを形成する緯度経度情報を取得する。
-                    List<List<BigDecimal>> p1LatLon = new ArrayList<>(point1Info.getAirways().get(0).getAirway().getGeometry().getCoordinates());
-                    List<List<BigDecimal>> p2LatLon = new ArrayList<>(point2Info.getAirways().get(0).getAirway().getGeometry().getCoordinates());
+			// セクションの2つ目の航路点IDを取得する。
+			String airwayPoint2 = uaslSection.getUaslPointIds().get(1);
+			// 航路点情報から2つ目の航路点IDと一致する航路点情報を取得する。
+			UaslPointEntity point2Info = airwayDetail.getUaslPoints().stream()
+					.filter(uaslPoints -> airwayPoint2.equals(uaslPoints.getUaslPointId())).findFirst().orElse(null);
 
-                    //終点を除いて高度の高い2地点を算出
-                    p1LatLon.removeLast();
-                    List<List<BigDecimal>> p1HighLatLon= p1LatLon.stream().sorted(Comparator.comparing((List<BigDecimal> point) -> point.get(2)).reversed()).toList();
-                    p2LatLon.removeLast();
-                    List<List<BigDecimal>> p2HighLatLon= p2LatLon.stream().sorted(Comparator.comparing((List<BigDecimal> point) -> point.get(2)).reversed()).toList();
-                    
-                    //地点1と地点2の点を結んだ線分を作成。
-                    StringBuilder lineString1St = new StringBuilder();
-                    lineString1St.append("LINESTRING(");
-                    //ジャンクション1の地点1を設定する。
-                    lineString1St.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1)).append(", ");
-                    //ジャンクション2の地点2を設定する。
-                    lineString1St.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1)).append(")");
-                    Geometry polyLine1 = GeometryEngine.geometryFromWkt(lineString1St.toString(), WktImportFlags.wktImportDefaults, Geometry.Type.Polyline);
-                    
-                    StringBuilder lineString2St = new StringBuilder();
-                    lineString2St.append("LINESTRING(");
-                    //ジャンクション1の地点2を設定する。
-                    lineString2St.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1)).append(", ");
-                    //ジャンクション2の地点2を設定する。
-                    lineString2St.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1)).append(")");
-                    Geometry polyLine2 = GeometryEngine.geometryFromWkt(lineString2St.toString(), WktImportFlags.wktImportDefaults, Geometry.Type.Polyline);
-                    StringBuilder wktPolygonSt = new StringBuilder();
-                    if(GeometryEngine.crosses(polyLine1, polyLine2, SpatialReference.create(4326))) {
-                        wktPolygonSt.append("POLYGON((");
-                        //ジャンクション1の地点1を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1)).append(", ");
-                        //ジャンクション1の地点2を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1)).append(", ");
-                        //ジャンクション2の地点2を設定する。
-                        wktPolygonSt.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1)).append(", ");
-                        //ジャンクション2の地点1を設定する。
-                        wktPolygonSt.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1)).append(", ");
-                        //終点(ジャンクション1の地点1)を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1)).append("))");
+			// 航路点情報が取得できない場合、異常なため破棄する。
+			if (point1Info != null && point2Info != null) {
+				// 航路点1,2より、ポリゴンを形成する緯度経度情報を取得する。
+				List<List<List<BigDecimal>>> p1LatLonRaw = new ArrayList<>(point1Info.getGeometry().getCoordinates());
+				List<List<List<BigDecimal>>> p2LatLonRaw = new ArrayList<>(point2Info.getGeometry().getCoordinates());
 
-                    }
-                    else {
-                        wktPolygonSt.append("POLYGON((");
-                        //ジャンクション1の地点1を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1)).append(", ");
-                        //ジャンクション1の地点2を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1)).append(", ");
-                        //ジャンクション2の地点2を設定する。
-                        wktPolygonSt.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1)).append(", ");
-                        //ジャンクション2の地点1を設定する。
-                        wktPolygonSt.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1)).append(", ");
-                        //終点(ジャンクション1の地点1)を設定する。
-                        wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1)).append("))");
-                    }
-                    
-                    Geometry polygon = GeometryEngine.geometryFromWkt(wktPolygonSt.toString(), WktImportFlags.wktImportDefaults, Geometry.Type.Polygon);
-                    //ポリゴンリストに追加する。
-                    polygons.add(polygon);
-                }
-            }
-        }
+				// 外周のリング（最初の要素）を取得
+				List<List<BigDecimal>> p1LatLon = new ArrayList<>(p1LatLonRaw.get(0));
+				List<List<BigDecimal>> p2LatLon = new ArrayList<>(p2LatLonRaw.get(0));
+				
+                //終点を除いて高度の高い2地点を算出
+                p1LatLon.removeLast();
+                List<List<BigDecimal>> p1HighLatLon= p1LatLon.stream().sorted(Comparator.comparing((List<BigDecimal> point) -> point.get(2)).reversed()).toList();
+                p2LatLon.removeLast();
+                List<List<BigDecimal>> p2HighLatLon= p2LatLon.stream().sorted(Comparator.comparing((List<BigDecimal> point) -> point.get(2)).reversed()).toList();
+
+				// 地点1と地点2の点を結んだ線分を作成。
+				StringBuilder lineString1St = new StringBuilder();
+				lineString1St.append("LINESTRING(");
+				// 航路点1の地点1を設定する。
+				lineString1St.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1))
+						.append(", ");
+				// 航路点2の地点2を設定する。
+				lineString1St.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1))
+						.append(")");
+				Geometry polyLine1 = GeometryEngine.geometryFromWkt(lineString1St.toString(),
+						WktImportFlags.wktImportDefaults, Geometry.Type.Polyline);
+
+				StringBuilder lineString2St = new StringBuilder();
+				lineString2St.append("LINESTRING(");
+				// 航路点1の地点2を設定する。
+				lineString2St.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1))
+						.append(", ");
+				// 航路点2の地点2を設定する。
+				lineString2St.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1))
+						.append(")");
+				Geometry polyLine2 = GeometryEngine.geometryFromWkt(lineString2St.toString(),
+						WktImportFlags.wktImportDefaults, Geometry.Type.Polyline);
+				StringBuilder wktPolygonSt = new StringBuilder();
+				if (GeometryEngine.crosses(polyLine1, polyLine2, SpatialReference.create(4326))) {
+					wktPolygonSt.append("POLYGON((");
+					// 航路点1の地点1を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1))
+							.append(", ");
+					// 航路点1の地点2を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1))
+							.append(", ");
+					// 航路点2の地点2を設定する。
+					wktPolygonSt.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1))
+							.append(", ");
+					// 航路点2の地点1を設定する。
+					wktPolygonSt.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1))
+							.append(", ");
+					// 終点(航路点1の地点1)を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1))
+							.append("))");
+
+				} else {
+					wktPolygonSt.append("POLYGON((");
+					// 航路点1の地点1を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1))
+							.append(", ");
+					// 航路点1の地点2を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(1).get(0)).append(" ").append(p1HighLatLon.get(1).get(1))
+							.append(", ");
+					// 航路点2の地点2を設定する。
+					wktPolygonSt.append(p2HighLatLon.get(0).get(0)).append(" ").append(p2HighLatLon.get(0).get(1))
+							.append(", ");
+					// 航路点2の地点1を設定する。
+					wktPolygonSt.append(p2HighLatLon.get(1).get(0)).append(" ").append(p2HighLatLon.get(1).get(1))
+							.append(", ");
+					// 終点(航路点1の地点1)を設定する。
+					wktPolygonSt.append(p1HighLatLon.get(0).get(0)).append(" ").append(p1HighLatLon.get(0).get(1))
+							.append("))");
+				}
+
+				Geometry polygon = GeometryEngine.geometryFromWkt(wktPolygonSt.toString(),
+						WktImportFlags.wktImportDefaults, Geometry.Type.Polygon);
+				// ポリゴンリストに追加する。
+				polygons.add(polygon);
+			}
+		}
         //ポリゴン情報が1件も存在しない場合、からのgeojsonを返却する。
         if(polygons.isEmpty()) return geoJson;
         //List→Arrayへ変換

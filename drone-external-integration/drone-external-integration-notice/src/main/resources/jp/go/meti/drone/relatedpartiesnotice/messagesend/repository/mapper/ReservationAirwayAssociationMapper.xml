@@ -6,6 +6,7 @@
 	INSERT INTO reservation_airway_association (
 		airway_reserve_id, 
 		airway_section_id, 
+		sequence, 
 		start_at, 
 		end_at, 
 		creation_id, 
@@ -15,6 +16,7 @@
 		VALUES (
 			#{airwayReserveId}, 
 			#{airwaySectionId}, 
+			#{sequence}, 
 			#{startAt}, 
 			#{endAt}, 
 			#{creationId}, 
@@ -22,10 +24,4 @@
 			#{updateId}, 
 			CURRENT_TIMESTAMP)
   </insert>
-  
-  <!-- 削除: airway_reserve_id に基づきデータを削除 -->
-    <delete id="deleteByAirwayReserveId">
-        DELETE FROM reservation_airway_association
-        WHERE airway_reserve_id = #{airwayReserveId}
-    </delete>
 </mapper>

@@ -19,16 +19,13 @@ import jp.go.meti.drone.com.common.util.MessageUtils;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayInfoEntity;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity;
 import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.MailSentInfoEntity;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.TenantNotificationEntity;
-import jp.go.meti.drone.relatedpartiesnotice.tenant.repository.entity.TenantEntity;
-import jp.go.meti.drone.relatedpartiesnotice.tenant.repository.mapper.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * メール送信 サービス
  * <p>
- * 受信した航路登録情報、航路予約情報を周知先に送信
+ * 受信した航路予約情報を周知先に送信
  * </p>
  * 
  * @version 1.0 2024/11/28
@@ -43,9 +40,6 @@ public class MailSendService {
 
 	@Autowired
 	private MailSentInfoService mailSentInfoService;
-
-	@Autowired
-	private TenantRepository tenantRepository;
 
 	// ユーザID
 	@Value("${systemuser}")
@@ -72,85 +66,20 @@ public class MailSendService {
 	private String contactMailAddress;
 
 	/**
-	 * 航路登録情報メール送信
-	 * <p>
-	 * 航路登録情報を基にメール送信メッセージを編集する<br>
-	 * 関係者へメール送信を行う。
-	 * <p>
-	 * 
-	 * @param airwayInfo                     航路情報
-	 * @param tenantNotificationList         関係者情報
-	 * @return 返答
-	 */
-	public boolean sendAirwayMailMessage(AirwayInfoEntity airwayInfo,
-			List<TenantNotificationEntity> tenantNotificationList) {
-		String mailMessage = "";
-		boolean isSent = true;
-		for (TenantNotificationEntity tenantNotification : tenantNotificationList) {
-			String messageType = "";
-			try {
-				// メッセージテンプレート
-				String templateFileName = "emailTemplateA.ftl";
-				// メール名
-				String subject = "";
-				String div = "";
-				// 送信内容編集
-				Map<String, Object> model = new HashMap<>();
-				if ("1".equals(airwayInfo.getStatus())) {
-					subject = MessageUtils.getContextMessage("DR000I001");
-					messageType = "10";
-					div = "更新";
-				} else if ("2".equals(airwayInfo.getStatus())) {
-					subject = MessageUtils.getContextMessage("DR000I002");
-					messageType = "11";
-					div = "削除";
-				} else {
-					log.error("処理区分パターン外。");
-					return false;
-				}
-				model.put("div", div);
-				model.put("relatedParties", tenantNotification.getOperatorName());
-				model.put("airwayId", airwayInfo.getAirwayId());
-				model.put("airwayName", airwayInfo.getAirwayName());
-				model.put("flightPurpose", airwayInfo.getFlightPurpose());
-				model.put("updatedAt", getFormattedJST(airwayInfo.getUpdatedAt()));
-				//共通情報を設定
-				setCommonMailInfo(model);
-
-				// メール送信メソッドの呼び出し
-				mailMessage = mailUtils.getTextFromTemplate(templateFileName, model);
-				mailUtils.sendMail(subject, mailMessage, tenantNotification.getNotificationTarget());
-				log.info("sendAirwayMailMessage:"
-						+ MessageUtils.getMessage("DR000I008", tenantNotification.getNotificationTarget()));
-
-				// 送信履歴更新
-				saveMailSentInfo(tenantNotification, mailMessage, "00", "", messageType);
-			} catch (Exception ex) {
-				isSent = false;
-				log.error("sendAirwayMailMessage:" + MessageUtils.getMessage("DR000E002"), ex);
-				// 送信履歴更新
-				saveMailSentInfo(tenantNotification, mailMessage, "01", ex.getMessage(), messageType);
-			}
-		}
-		return isSent;
-	}
-
-	/**
 	 * 航路予約情報メール送信
 	 * <p>
 	 * 航路予約情報を基にメール送信メッセージを編集する<br>
 	 * 関係者へメール送信を行う。
 	 * <p>
 	 * 
-	 * @param airwayReservationInfo          航路予約情報
-	 * @param tenantNotificationList         関係者情報
+	 * @param targetList 航路予約情報
+	 * @param requestId 親予約ID
 	 * @return 返答
 	 */
-	public boolean sendAirwayReservationMailMessage(AirwayReservationInfoEntity airwayReservationInfo,
-			List<TenantNotificationEntity> tenantNotificationList,List<String> airwayNames) {
+	public boolean sendAirwayReservationMailMessage(List<AirwayReservationInfoEntity> targetList, String requestId) {
 		String mailMessage = "";
 		boolean isSent = true;
-		for (TenantNotificationEntity tenantNotification : tenantNotificationList) {
+		for (AirwayReservationInfoEntity airwayReservationInfo : targetList) {
 			String messageType = "";
 			try {
 				// メッセージテンプレート
@@ -159,37 +88,40 @@ public class MailSendService {
 				String subject = MessageUtils.getContextMessage("DR000I007");
 				// 送信内容編集
 				Map<String, Object> model = new HashMap<>();
-				model.put("relatedParties", tenantNotification.getOperatorName());
-				model.put("airwayReserveUser", getOperatorName(airwayReservationInfo.getOperatorId()));
-				model.put("airwayReserveId", airwayReservationInfo.getAirwayReserveId());
-				model.put("airwayNames", airwayNames.stream().collect(Collectors.joining(",")));
+				model.put("relatedParties", airwayReservationInfo.getOperatorName());
+				model.put("airwayReserveUser", airwayReservationInfo.getReservationOperatorId());
+				model.put("requestId", requestId);
+				model.put("airwayReserveIds", airwayReservationInfo.getAirwayReserveId());
+				model.put("airwayNames", airwayReservationInfo.getAirwayName());
+				model.put("flightPurpose", airwayReservationInfo.getFlightPurpose());
 				model.put("updatedAt", getFormattedJST(airwayReservationInfo.getUpdatedAt()));
-				if ("1".equals(airwayReservationInfo.getStatus()) || "4".equals(airwayReservationInfo.getStatus())) {
+				
+				if ("1".equals(airwayReservationInfo.getStatus())) {
 					model.put("div", "更新");
 					messageType = "20";
 				} else if ("2".equals(airwayReservationInfo.getStatus())) {
 					model.put("div", "キャンセル");
 					messageType = "21";
 				} else {
-					model.put("div", "キャンセル");
-					messageType = "22";
+				    model.put("div", "キャンセル");
+                    messageType = "22";
 				}
 				//共通情報を設定
 				setCommonMailInfo(model);
 				
 				// メール送信メソッドの呼び出し
 				mailMessage = mailUtils.getTextFromTemplate(templateFileName, model);
-				mailUtils.sendMail(subject, mailMessage, tenantNotification.getNotificationTarget());
+				mailUtils.sendMail(subject, mailMessage, airwayReservationInfo.getNotificationEmail());
 				log.info("sendAirWayReservationMailMessage:"
-						+ MessageUtils.getMessage("DR000I009", tenantNotification.getNotificationTarget()));
+						+ MessageUtils.getMessage("DR000I009", airwayReservationInfo.getNotificationEmail()));
 
 				// 送信履歴更新
-				saveMailSentInfo(tenantNotification, mailMessage, "00", "", messageType);
+				saveMailSentInfo(airwayReservationInfo, mailMessage, "00", "", messageType);
 			} catch (Exception ex) {
 				isSent = false;
 				log.error("sendAirwayMailMessage:" + MessageUtils.getMessage("DR000E002"), ex);
 				// 送信履歴更新
-				saveMailSentInfo(tenantNotification, mailMessage, "01", ex.getMessage(), messageType);
+				saveMailSentInfo(airwayReservationInfo, mailMessage, "01", ex.getMessage(), messageType);
 			}
 		}
 		return isSent;
@@ -198,20 +130,20 @@ public class MailSendService {
 	/**
 	 * 送信履歴更新を行う。<br>
 	 * 
-	 * @param tenantNotification         関係者情報
+	 * @param airwayReservationInfo      関係者情報
 	 * @param mailMessage                送信内容
 	 * @param sentResult                 送信結果
 	 * @param failReason                 失敗理由
 	 * @param messageType                メッセージタイプ
 	 */
-	private void saveMailSentInfo(TenantNotificationEntity tenantNotification, String mailMessage,
+	private void saveMailSentInfo(AirwayReservationInfoEntity airwayReservationInfo, String mailMessage,
 			String sentResult, String failedReason, String messageType) {
 		try {
 			// 送信履歴更新
 			MailSentInfoEntity mailSendInfo = new MailSentInfoEntity();
-			mailSendInfo.setOperatorId(tenantNotification.getOperatorId());
-			mailSendInfo.setNotificationTarget(tenantNotification.getNotificationTarget());
-			mailSendInfo.setNotificationType(tenantNotification.getNotificationType());
+			mailSendInfo.setOperatorId(airwayReservationInfo.getRelatedOperatorId());
+			mailSendInfo.setNotificationTarget(airwayReservationInfo.getNotificationEmail());
+			mailSendInfo.setNotificationType("1");
 			mailSendInfo.setMessageType(messageType);
 			mailSendInfo.setMailDetail(mailMessage);
 			mailSendInfo.setSentResult(sentResult);
@@ -224,30 +156,6 @@ public class MailSendService {
 		}
 	}
 
-	/**
-	 * 事業者名を取得
-	 * <p>
-	 * 事業者IDより事業者名を取得
-	 * </p>
-	 * 
-	 * @param operatorId 事業者ID
-	 * @return 事業者名
-	 */
-	private String getOperatorName(String operatorId) {
-		String operatorName = "-";
-		try {
-		    // 事業者情報取得
-		    List<TenantEntity> tenantEntities = tenantRepository.selectByPrimaryKey(operatorId);
-		    if (!tenantEntities.isEmpty()) {
-		    	operatorName = tenantEntities.get(0).getOperatorName();
-		    }
-		} catch (Exception e) {
-			// ＤＢアクセスエラーが発生しました。
-		    String message = MessageUtils.getMessage("DR000E001");
-		    log.error(message,e);
-		}
-		return operatorName;
-	}
 	
 	/**
 	 * メールの共通情報に対する埋め込み文字列を設定する。

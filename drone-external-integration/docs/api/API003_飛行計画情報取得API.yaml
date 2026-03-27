@@ -1,0 +1,613 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /flightPlanInfoReceiver:
+    post:
+      tags:
+        - ドローン航路システム
+      summary: 飛行計画情報取得
+      description: |-
+        DIPS2.0から指定した条件に一致する飛行計画情報を取得する。
+
+        使用するモデル： droneRoute.FlightPlanInfoRequest
+      requestBody:
+        description: Request Body
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/droneRoute.FlightPlanInfoRequest"
+      responses:
+        "200":
+          description: DIPS2.0から取得した飛行計画情報を返却
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/droneRoute.FlightPlanInfoResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "401":
+          description: DipsAccessTokenException
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseDipsAccessTokenError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+      
+components:
+  schemas:
+    droneRoute.FlightPlanInfoRequest:
+      type: object
+      required:
+        - features
+      properties:
+        features:
+          $ref: "#/components/schemas/Geometry"
+        allFlightPlan:
+          type: string
+          description: |
+            検索対象利用者
+            "0": 全ユーザー, "1": 自アカウントのみ
+            指定がない場合は全ユーザー
+          example: "0"
+        startTime:
+          type: string
+          description: |
+            検索開始時刻
+            検索時間に含まれる飛行計画が検索される
+            yyyyMMdd□HHmm 形式（□は半角スペース) 指定がない場合当日0 時 0 分
+          example: "20221118 1200"
+        finishTime:
+          type: string
+          description: |
+            検索終了時刻
+            検索時間に含まれる飛行計画が検索される 
+            yyyyMMdd□HHmm 形式（□は半角スペース） 指定がない場合当日 23 時 59 分
+            開始時刻より 24 時間以内
+          example: "20221118 2359"
+        updateTime:
+          type: string
+          description: |
+            更新時刻
+            指定時刻以降に更新されたものを検索対象とする 
+            yyyyMMdd□HHmm 形式（□は半角スペース) 指定がない場合は全て 
+          example: "20221118 0000"
+
+    Geometry:
+      type: object
+      required:
+        - type
+      description: |
+        検索範囲
+        指定範囲に飛行範囲の一部または全てが含まれる飛行計画の情報を返却
+      properties:
+        type:
+          type: string
+          description: |
+            ジオメトリタイプ
+            検索範囲に使用する図形種別（Circle:円,Polygon:多角形）
+          example: "Circle"
+        center:
+          type: array
+          description: |
+            ジオメトリ（中心点） 
+            ジオメトリタイプで「Circle」を指定した場合必須 
+          items:
+            type: number
+          example: [139.4677, 35.6476]
+        radius:
+          type: number
+          description: |
+            半径
+            ジオメトリタイプで「Circle」を指定した場合必須 
+          example: 10000
+        coordinates:
+          type: array
+          description: |
+            ジオメトリ（構成点） 
+            ジオメトリタイプで「Polygon:多角形」を指定した場合設定が必須 
+            ジオメトリタイプで「Polygon:多角形」を指定した場合 3 点以上の
+            構成点を設定する（終点は始点と同じ座標をサーバー側で生成） 
+          items:
+            type: array
+            items:
+              type: number
+          example:
+            - [139.779031, 35.569748]
+            - [139.782776, 35.574085]
+            - [139.77099, 35.56901]
+            - [139.779031, 35.569748]
+
+    droneRoute.FlightPlanInfoResponse:
+      type: object
+      required:
+        - totalCount
+      properties:
+        flightPlanInfo:
+          type: array
+          description: 飛行計画情報一覧
+          items:
+            $ref: '#/components/schemas/FlightPlan'
+        totalCount:
+          type: integer
+          description: 総件数
+          example: 1
+
+    FlightPlan:
+      type: object
+      required:
+        - flightPlanId
+        - startTime
+        - finishTime
+        - plannedMaxTime
+        - plannedFlightTime
+        - flightSpeed
+        - flightAltitude
+        - flyRoute
+      properties:
+        flightPlanId:
+          type: string
+          description: |
+            飛行計画 ID
+            飛行計画登録時に採番された番号
+          example: "AAAAAAAAAAAAAAAAAAA.FP20221125042709013.001"
+        name:
+          type: string
+          description: 飛行計画名称
+          example: "ID2"
+        flightPurpose:
+          type: array
+          items:
+            type: integer
+            description: |
+              飛行目的
+              当該飛行の目的（空中散布、研究開発、インフラ点検、物流等）（複数返却）:
+              1: 空撮, 2: 報道取材, 3: 警備, 4: 農林水産業, 5: 測量,
+              6: 環境調査, 7: 設備メンテナンス, 8: インフラ点検・保守,
+              9: 資材管理, 10: 輸送・宅配, 11: 自然観測, 12: 事故・災害対応等,
+              13: その他 1（業務）, 14: 趣味, 15: 研究開発, 16: その他 2（業務以外）
+          example: [1, 5]
+        othergyomutext:
+          type: string
+          description: その他 1 理由入力
+          example: ""
+        othergyomugaitext:
+          type: string
+          description: その他 2 理由入力
+          example: ""
+        flightAirspace:
+          type: array
+          items:
+            type: integer
+            description: |
+              飛行空域
+              特定飛行の飛行形態で空域に関するもの（空港周辺、150ｍ以上、DID 内）（複数選択可）:
+              1: 人・家屋の密集地域の上空,
+              2: 地表・水面から150m以上の空域,
+              3: 空港周辺
+          example: [1, 3]
+        flightType:
+          type: array
+          items:
+            type: integer
+            description: |
+              飛行方法
+              特定飛行の飛行形態で方法に関するもの 
+              （イベント上空、危険物輸送、物件投下、夜間、目視外、人・物件から 30ｍ未満等）
+              （複数選択可）:
+              1: 人・物件から30m未満,
+              2: 催し物上空,
+              3: 夜間飛行,
+              4: 目視外飛行,
+              5: 危険物輸送,
+              6: 物件投下
+          example: [2, 4]
+        assistantsNumber:
+          type: integer
+          description: 補助者数
+          example: 5
+        departurePoint:
+          type: string
+          description: 出発地
+          example: "泉岳寺"
+        startTime:
+          type: string
+          description: 飛行開始日時（yyyyMMdd HHmm）
+          example: "20221125 1130"
+        finishTime:
+          type: string
+          description: 飛行終了日時（yyyyMMdd HHmm）
+          example: "20221125 1230"
+        plannedMaxTime:
+          type: integer
+          description: |
+            航続可能時間
+            飛行させる機体の航続可能時間（分）のうち最大値 （５分単位 5～1440）
+          example: 120
+        plannedFlightTime:
+          type: integer
+          description: |
+            所要時間
+            飛行開始時刻から飛行終了時刻までの時間（分） （５分単位 5～1440）
+          example: 60
+        flightSpeed:
+          type: integer
+          description: |
+            飛行速度
+            当該飛行で多用する速度、又は最大速度（GS）単位:km/h
+          example: 100
+        flightAltitude:
+          type: integer
+          description: |
+            飛行する高度
+            当該飛行で多用する高度、又は最大高度（AGL）単位:メートル(地上からの高度)
+          example: 120
+        flyRoute:
+          description: |
+            飛行の経路
+            飛行計画に登録されている飛行経路、飛行エリア 
+          $ref: '#/components/schemas/FlyRoute'
+        destinationPoint:
+          type: string
+          description: 目的地
+          example: "京急泉岳寺駅"
+        riskMitigationOnsiteControl:
+          type: string
+          description: |
+            立入管理措置
+            立入管理措置を講じる場合"1",立入管理措置を講じない場合"0"
+          example: "1"
+        riskMitigationOnsiteControlL3:
+          type: string
+          description: |
+            立入管理措置（レベル3飛行）
+            立入管理措置（レベル 3 飛行）を講じる場合"1",立入管理措置を講じない場合"0"
+          example: "0"
+        riskMitigationOnsiteControl2:
+          type: string
+          description: |
+            立入禁止措置
+            立入禁止措置を講じる場合"1",立入管理措置を講じない場合"0"
+          example: "0"
+        exceptionalConditionsMooring:
+          type: string
+          description: |
+            係留飛行
+            係留飛行を行う場合"1",係留飛行を行ない場合"0"
+          example: "1"
+        insuranceInformation:
+          description: 保険に関する情報
+          $ref: '#/components/schemas/InsuranceInformation'
+        reporter:
+          description: 通報者情報
+          $ref: '#/components/schemas/Reporter'
+        otherInformation:
+          type: string
+          description: その他特記事項
+          example: "その他特記事項なし"
+        pilotInfo:
+          type: array
+          description: 操縦者情報
+          items:
+            $ref: '#/components/schemas/PilotInfo'
+        aircraftInfo:
+          type: array
+          description: 機体情報
+          items:
+            $ref: '#/components/schemas/AircraftInfo'
+        flightPermitApplicationInfo:
+          description: 許可・承認情報
+          $ref: '#/components/schemas/FlightPermitApplicationInfo'
+          
+    FlyRoute:
+      type: object
+      required:
+        - type
+        - center
+        - radius
+        - coordinates
+      description: |
+        飛行経路情報
+        飛行計画に登録されている飛行経路、飛行エリア 
+      properties:
+        type:
+          type: string
+          description: |
+            ジオメトリタイプ 
+            Circle: 円、Polygon:多角形
+          example: "Circle"
+        center:
+          type: array
+          description: |
+            ジオメトリ（中心点） 
+            ジオメトリタイプが「Circle: 円」の場合、指定される
+          items:
+            type: number
+          example: [139.4677, 35.6476]
+        radius:
+          type: number
+          description: |
+            半径
+            ジオメトリタイプが「Circle: 円」の場合、指定される（単位:メートル）
+          example: 10000
+        coordinates:
+          type: array
+          description: |
+            ジオメトリ（構成点） 
+            ジオメトリタイプが「Polygon:多角形」の場合、指定される
+          items:
+            type: array
+            items:
+              type: number
+          example:
+            - [139.779031, 35.569748]
+            - [139.782776, 35.574085]
+            - [139.77099, 35.56901]
+            - [139.779031, 35.569748]
+
+    InsuranceInformation:
+      type: object
+      description: 保険情報
+      properties:
+        insuranceCompany:
+          type: string
+          description: 保険会社名
+          example: "〇×損保"
+        insuranceProduct:
+          type: string
+          description: 商品名
+          example: "〇×保険"
+        interPerson:
+          type: integer
+          description: 補償金額（対人）
+          example: -1
+        interObject:
+          type: integer
+          description: 補償金額（対物）
+          example: 20000000
+        insuranceAbility:
+          type: string
+          description: |
+            賠償能力（"1": あり, "0": なし）
+          example: "1"
+        insuranceSupplement:
+          type: string
+          description: 補足情報
+          example: "補足情報なし"
+
+    Reporter:
+      type: object
+      description: 通報者情報
+      properties:
+        contactReporterFlag:
+          type: string
+          description: |
+            連絡先フラグ（
+            通報者を連絡先とする場合"1",しない場合"０" 
+            通報者、操縦者、許可・承認情報のいずれか一つの連絡先フラグが”１”に設定されている 
+          example: "1"
+        contactReporter:
+          description: 通報者の連絡先情報
+          $ref: '#/components/schemas/Contact'
+
+    PilotInfo:
+      type: object
+      description: 操縦者情報
+      properties:
+        pilotId:
+          type: integer
+          description: 操縦者ID
+          example: 1132709
+        contactPilotFlag:
+          type: string
+          description: |
+            連絡先フラグ
+            操縦者を連絡先とする場合"1",しない場合"０" 
+          example: "0"
+        contactPilot:
+          description: 操縦者の連絡先情報
+          $ref: '#/components/schemas/Contact'
+        skillCertificationNumber:
+          type: string
+          description: 技能証明書番号
+          example: "12345678901"
+        firstClass:
+          type: string
+          description: |
+            技能証明（一等）（"1": 有り, "0": 無し）
+          example: "1"
+        secondClass:
+          type: string
+          description: |
+            技能証明（二等）（"1": 有り, "0": 無し）
+          example: "1"
+        privateLicense:
+          type: string
+          description: |
+            技能認証保有状況（"1": 有り, "0": 無し）
+          example: "1"
+        maker:
+          type: string
+          description: 使用機体製造者名
+          example: "maker001"
+        model:
+          type: string
+          description: 使用機体型式名
+          example: "model001"
+
+    AircraftInfo:
+      type: object
+      description: 機体情報
+      properties:
+        aircraftId:
+          type: integer
+          description: 機体ID
+          example: 1132709
+        type:
+          type: string
+          description: |
+            機体の種類:
+            1: 飛行機,
+            2: 回転翼航空機（ヘリコプター）,
+            3: 回転翼航空機（マルチローター）,
+            4: 回転翼航空機（その他）,
+            5: 滑空機,
+            6: 飛行船
+          example: "2"
+        certificationNum:
+          type: string
+          description: 機体認証書番号
+          example: "12345678901"
+        symbol:
+          type: string
+          description: 登録記号
+          example: "JU1234567890"
+        model:
+          type: string
+          description: 型式／名称
+          example: "model001"
+        maker:
+          type: string
+          description: 製造者名
+          example: "maker001"
+        certification1:
+          type: string
+          description: |
+            機体認証（第一種）（"1": 有り, "0": 無し）
+          example: "1"
+        certification2:
+          type: string
+          description: |
+            機体認証（第二種）（"1": 有り, "0": 無し）
+          example: "0"
+        maxWeight:
+          type: number
+          description: 最大離陸重量（kg）
+          example: 20.5
+
+    FlightPermitApplicationInfo:
+      type: object
+      description: 許可・承認情報
+      properties:
+        flightPermitApplicationNumber:
+          type: string
+          description: 許可・承認番号
+          example: "dddddddddd"
+        permitDate:
+          type: string
+          description: 許可書発行日（YYYYMMDD形式）
+          example: "20221020"
+        startDate:
+          type: string
+          description: 許可期間（自）開始日（YYYYMMDD形式）
+          example: "20221020"
+        finishDate:
+          type: string
+          description: 許可期間（至）終了日（YYYYMMDD形式）
+          example: "20231020"
+        contactPermitFlag:
+          type: string
+          description: |
+            連絡先フラグ 
+            許可・承認情報登録者を連絡先とするか（"1": する, "0": しない）
+          example: "0"
+        contactPermit:
+          type: object
+          description: 許可・承認に関する連絡先情報
+          $ref: '#/components/schemas/Contact'
+
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 氏名
+          example: "操縦太郎"
+        country:
+          type: string
+          description: 国コード
+          example: "001"
+        prefectures:
+          type: string
+          description: 都道府県コード 
+          example: "13"
+        municipality:
+          type: string
+          description: 住所（市町村）
+          example: "中央区銀座 1-1"
+        telephoneCountry:
+          type: string
+          description: 電話番号(国コード）
+          example: "001"
+        telephone:
+          type: string
+          description: 電話番号
+          example: "09011112222"
+        email:
+          type: string
+          description: メールアドレス
+          example: "shinsei@email.com"
+
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "検索範囲は必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseDipsAccessTokenError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 401
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "DIPSアクセストークン例外。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage

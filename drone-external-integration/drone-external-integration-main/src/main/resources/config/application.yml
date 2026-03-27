@@ -13,12 +13,14 @@ spring.profiles:
       - dips-web-client-template-dev
       - external-integration-auth-common-dev
       - external-integration-dips-notice-dev
+      - external-integration-swim-dev
     test: # 検証環境
       - test
       - healthcheck
       - dips-web-client-template-test
       - external-integration-auth-common-test
       - external-integration-dips-notice-test
+      - external-integration-swim-test
     prod: # 本番環境
       - prod
       - healthcheck
@@ -26,6 +28,7 @@ spring.profiles:
       - dips-web-client-template-prod
       - external-integration-auth-common-prod
       - external-integration-dips-notice-prod
+      - external-integration-swim-prod
 
 server:
   port: 8080

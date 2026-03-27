@@ -12,7 +12,14 @@
 	<name>drone-external-integration-dips</name>
 	<description>drone-external-integration-dips project</description>
 	<dependencies>
-
+		<dependency>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>drone-com-common</artifactId>
@@ -78,5 +85,6 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+
 	</build>
 </project>

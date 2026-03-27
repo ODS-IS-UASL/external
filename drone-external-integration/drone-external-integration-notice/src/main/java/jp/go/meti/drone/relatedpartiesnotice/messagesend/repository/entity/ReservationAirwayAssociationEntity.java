@@ -22,6 +22,9 @@ public class ReservationAirwayAssociationEntity {
 	// 航路区画ID
 	private String airwaySectionId;
 	
+	// 通過順
+	private Integer sequence;
+	
 	// 作成日時
 	private LocalDateTime startAt;
 	

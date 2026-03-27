@@ -1,0 +1,67 @@
+external:
+  api:
+    max-fall-range:
+      url:
+        get: "${UASL_HOST}${MAX_FALL_RANGE_PATH}"
+    uasl:
+      url:
+        get: "${UASL_HOST}${UASL_PATH}"
+      flightPurpose: "${UASL_FLIGHT_PURPOSE}"
+
+    token-client:
+      url:
+        post: "${AUTH_TOKEN_HOST}${AUTH_TOKEN_URI}"
+      client_id: "${AUTH_TOKEN_CLIENT_ID}"
+      client_secret: "${AUTH_TOKEN_CLIENT_SECRET}"
+      api_key: "${AUTH_TOKEN_API_KEY}"
+    pip:
+      url:
+        post: "${PIP_HOST}${PIP_URI}"
+    connect_timeout: 300 # sec
+    read_timeout: 300 # sec
+
+excel:
+  template:
+    path:
+      regist: "excel/templates/regist_tmpl.xlsx"
+      update: "excel/templates/update_tmpl.xlsx"
+      cancel: "excel/templates/cancel_tmpl.xlsx"
+  tag-open: "["
+  tag-close: "]"
+
+
+export.common:
+  dateformat: "yyyy/M/d HH:mm:ss"
+  min_latitude: 20.425246
+  max_latitude: 45.557228
+  min_longitude: 122.9325
+  max_longitude: 153.986667
+
+fixedValues:
+  
+  feature:
+    type: "D_OTHER"
+    localType: "UAS_OPERATIONAL_AREA"
+    name: "UAS_LINES"
+  
+  object10:
+    activity: "UAV"
+    status: "ACTIVE"
+
+  object13:
+    timeReference: "UTC"
+    day: "ANY"
+    dayTil: "ANY"
+    startTime: "00:00"
+    endTime: "00:00"
+    excluded: "NO"
+
+  object24:
+    operation: ""
+    operationSequence: ""
+
+  object38:  
+    upperLimitReference: "MSL"
+    lowerLimit: "GND"
+    lowerLimitReference: ""
+    upperLimitUnit: "[M]"

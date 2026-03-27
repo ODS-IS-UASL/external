@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /swimExport/{maxFallRangeId}/{businessNumber}:
+    get:
+      tags:
+        - ドローン航路システム
+      summary: SWIM連携用情報エクスポート.
+      description: |-
+        指定された最大落下範囲IDで情報を取得し、SWIM連携用ファイルに変換してZIP形式のファイルを返却する。
+      parameters:
+        - name: maxFallRangeId
+          in: path
+          description: 最大落下範囲ID
+          required: true
+          schema:
+            type: string
+            minLength: 36
+            maxLength: 36
+        - name: businessNumber
+          in: path
+          description: 事業者番号
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: operatorId
+          in: query
+          description: 事業者ID(L3-uuid)
+          required: true
+          schema:
+            type: string
+            minLength: 36
+            maxLength: 36
+        - name: force
+          in: query
+          description: 強制出力フラグ(フィードバック前の再出力用途)
+          required: false
+          schema:
+            type: boolean
+            default: false
+            
+      responses:
+        "200":
+          description: ZIPファイルのダウンロードが成功
+          headers:
+            Content-Disposition:
+              description: コンテンツがダウンロードファイルであることを示します
+              schema:
+                type: string
+                example: 'attachment; filename="example.zip"'
+            Content-Type:
+              description: 送信されるファイルのMIMEタイプです
+              schema:
+                type: string
+                example: "application/octet-stream"
+            Content-Length:
+              description: ZIPファイルのバイト数です
+              schema:
+                type: integer
+                example: 102400 # 例として100KB
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                example: "UEsDBBQAAAAIAIlBME5hRUUwY...（バイナリデータの一部）"
+        "400":
+          description: |
+            Bad Request パラメーターに誤りがある場合に返却する。具体的には以下のケースを想定する。  
+            - 必須指定されているパラメータが指定されていない場合  
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "404":
+          description: Not Found 指定した情報が取得できない場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseNotFoundError"
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+
+    delete:
+      tags:
+        - ドローン航路システム
+      summary: SWIM連携用情報エクスポート(取消).
+      description: |-
+        指定された最大落下範囲IDで情報を取得し、SWIM連携用ファイルに変換してZIP形式のファイルを返却する。(取消フォーマット)
+      parameters:
+        - name: maxFallRangeId
+          in: path
+          description: 最大落下範囲ID
+          required: true
+          schema:
+            type: string
+            minLength: 36
+            maxLength: 36
+        - name: businessNumber
+          in: path
+          description: 事業者番号
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: force
+          in: query
+          description: 強制出力フラグ(未使用)
+          required: false
+          schema:
+            type: boolean
+            default: false
+            
+      responses:
+        "200":
+          description: ZIPファイルのダウンロードが成功
+          headers:
+            Content-Disposition:
+              description: コンテンツがダウンロードファイルであることを示します
+              schema:
+                type: string
+                example: 'attachment; filename="example.zip"'
+            Content-Type:
+              description: 送信されるファイルのMIMEタイプです
+              schema:
+                type: string
+                example: "application/octet-stream"
+            Content-Length:
+              description: ZIPファイルのバイト数です
+              schema:
+                type: integer
+                example: 102400 # 例として100KB
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+                example: "UEsDBBQAAAAIAIlBME5hRUUwY...（バイナリデータの一部）"
+        "400":
+          description: |
+            Bad Request パラメーターに誤りがある場合に返却する。具体的には以下のケースを想定する。  
+            - 必須指定されているパラメータが指定されていない場合  
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "404":
+          description: Not Found 指定した情報が取得できない場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseNotFoundError"
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+
+components:
+  schemas:
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "最大落下範囲IDは必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "指定された情報は取得できませんでした。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage

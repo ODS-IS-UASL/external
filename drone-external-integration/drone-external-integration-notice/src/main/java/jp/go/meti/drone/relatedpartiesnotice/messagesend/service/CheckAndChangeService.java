@@ -10,10 +10,13 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jp.go.meti.drone.com.common.util.MessageUtils;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.AirwayInfo;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.AirwayReserveInfo;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.AirwaySection;
-import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.ReserveSection;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslReservation;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslSectionEntity;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslSections;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.DestinationReservationEntity;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.DestinationReservationNotification;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.DestinationUaslSectionEntity;
+import jp.go.meti.drone.relatedpartiesnotice.messagesend.model.UaslInfo;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,15 +25,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class CheckAndChangeService {
-	
+	// キャンセル
     private static final String STATUS_CANCELED = "CANCELED";
     //予約
     private static final String STATUS_RESERVED = "RESERVED";
     //撤回
     private static final String STATUS_RESCINDED = "RESCINDED";
-    //予約可能
-    private static final String STATUS_AVAILABLE = "AVAILABLE";
-	/**
+    
+    //日時フォーマット1
+    private static final DateTimeFormatter FORMATTER1 =
+    		DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+  //日時フォーマット2
+    private static final DateTimeFormatter FORMATTER2 =
+    		DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
+    /**
 	 * @param timestampStr
 	 * @param fieldName
 	 * @return null
@@ -49,175 +58,449 @@ public class CheckAndChangeService {
 
 		}
 	}
-
-	/**
-	 * airwayInfoの必須な項目をチェック
-	 * 
-	 * @param airWayInfo
+	
+    /**
+	 * @param checkTarget
+	 * @return result
 	 */
-	public boolean notNullCheckAirwayInfo(AirwayInfo airwayInfo) {
-	    //チェック結果
+	private boolean checktimeStampFormat(String checkTarget) {
+		try {
+    		FORMATTER1.parse(checkTarget);
+    		return true;
+    	}catch(DateTimeParseException e){
+    		// 次のチェックへ進む
+    	}
+		try {
+    		FORMATTER2.parse(checkTarget);
+    		return true;
+    	}catch(DateTimeParseException e){
+    		return false;
+    	}
+	}
+	
+	/**
+     * Json型MTQQメッセージをobjectに変更
+     * 
+     * @param payload
+     * @param clazz
+     * @return AirwayReserveInfo
+     */
+    public <T> T converJsontoObject(String payload, Class<T> clazz) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(payload, clazz);
+        } catch (IOException e) {
+            // エラーメッセージ：Jsonデータの形式が正しくありません。出力される。
+            String errorMessage = MessageUtils.getMessage("DRC01E002");
+            log.error(errorMessage,e);
+            return null;
+        }
+    }
+	
+	/**
+	 * 乗り入れ元航路（主航路）の予約通知ペイロードの項目をチェック
+	 * 
+	 * @param uaslReservationInfo
+	 */
+	public boolean uaslReservationCheck(UaslReservation uaslReservationInfo) {
+		//チェック結果
 	    boolean result = true;
 	    
-	    if (airwayInfo.getRegisteredAt() == null || airwayInfo.getRegisteredAt().isEmpty()) {
+	    if(uaslReservationInfo.getEventId() == null || uaslReservationInfo.getEventId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EventId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(uaslReservationInfo.getRequestId() == null || uaslReservationInfo.getRequestId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "RequestId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(uaslReservationInfo.getOperatorId() == null || uaslReservationInfo.getOperatorId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "OperatorId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(uaslReservationInfo.getFlightPurpose() == null || uaslReservationInfo.getFlightPurpose().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "FlightPurpose");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(uaslReservationInfo.getStatus() == null) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
+            log.error(errorMessage);
+            result = false;
+	    }else if(uaslReservationInfo.getStatus().getValue() != STATUS_RESERVED
+	    		&& uaslReservationInfo.getStatus().getValue() != STATUS_CANCELED
+	    		&& uaslReservationInfo.getStatus().getValue() != STATUS_RESCINDED) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(uaslReservationInfo.getReservedAt() == null || uaslReservationInfo.getReservedAt().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservedAt");
+            log.error(errorMessage);
+            result = false;
+	    }else{
+	    	if(!checktimeStampFormat(uaslReservationInfo.getReservedAt())) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservedAt");
+	            log.error(errorMessage);
+	            result = false;
+    		}
+	    }
+	    
+	    if(uaslReservationInfo.getUpdatedAt() == null || uaslReservationInfo.getUpdatedAt().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
+            log.error(errorMessage);
+            result = false;
+	    }else{
+	    	if(!checktimeStampFormat(uaslReservationInfo.getUpdatedAt())) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
+	            log.error(errorMessage);
+	            result = false;
+    		}
+	    }
+	    
+	    if(uaslReservationInfo.getOriginReservation() == null) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "OriginReservation");
+            log.error(errorMessage);
+            result = false;
+	    }else {
+	    	if(uaslReservationInfo.getOriginReservation().getReservationId() == null
+	    			|| uaslReservationInfo.getOriginReservation().getReservationId().isEmpty()) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservationId");
+	            log.error(errorMessage);
+	            result = false;
+	    	}
+	    	
+	    	if(uaslReservationInfo.getOriginReservation().getUaslId() == null
+	    			|| uaslReservationInfo.getOriginReservation().getUaslId().isEmpty()) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslId");
+	            log.error(errorMessage);
+	            result = false;
+	    	}
+	    	
+	    	if(uaslReservationInfo.getOriginReservation().getAdministratorId() == null
+	    			|| uaslReservationInfo.getOriginReservation().getAdministratorId().isEmpty()) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AdministratorId()");
+	            log.error(errorMessage);
+	            result = false;
+	    	}
+	    	
+	    	if(uaslReservationInfo.getOriginReservation().getUaslSections() == null
+	    			|| uaslReservationInfo.getOriginReservation().getUaslSections().isEmpty()) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSections");
+	            log.error(errorMessage);
+	            result = false;
+	    	}else {
+	    		for(UaslSectionEntity uaslSectonEntity : uaslReservationInfo.getOriginReservation().getUaslSections()) {
+	    			if(uaslSectonEntity.getUaslSectionId() == null || uaslSectonEntity.getUaslSectionId().isEmpty()) {
+	    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionId");
+	    	            log.error(errorMessage);
+	    	            result = false;
+	    			}
+	    			
+	    			if(uaslSectonEntity.getStartAt() == null || uaslSectonEntity.getStartAt().isEmpty()) {
+	    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+	    	            log.error(errorMessage);
+	    	            result = false;
+	    			}else{
+	    				if(!checktimeStampFormat(uaslSectonEntity.getStartAt())) {
+	    					String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+	    		            log.error(errorMessage);
+	    		            result = false;
+	    	    		}
+	    		    }
+	    			
+	    			if(uaslSectonEntity.getEndAt() == null || uaslSectonEntity.getEndAt().isEmpty()) {
+	    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+	    	            log.error(errorMessage);
+	    	            result = false;
+	    			}else{
+	    				if(!checktimeStampFormat(uaslSectonEntity.getEndAt())) {
+	    					String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+	    		            log.error(errorMessage);
+	    		            result = false;
+	    	    		}
+	    		    }
+	    			
+	    			if(uaslSectonEntity.getSequence() == null) {
+	    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Sequence");
+	    	            log.error(errorMessage);
+	    	            result = false;
+	    			}
+	    		}
+	    	}
+	    }
+	    
+	    if(uaslReservationInfo.getDestinationReservations() != null
+    			&& !uaslReservationInfo.getDestinationReservations().isEmpty()) {
+    		for(DestinationReservationEntity destinationReservationEntity : uaslReservationInfo.getDestinationReservations()) {
+    			if(destinationReservationEntity.getReservationId() == null || destinationReservationEntity.getReservationId().isEmpty())  {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservationId");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}
+    			
+    			if(destinationReservationEntity.getUaslId() == null || destinationReservationEntity.getUaslId().isEmpty())  {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslId");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}
+    			
+    			if(destinationReservationEntity.getAdministratorId() == null || destinationReservationEntity.getAdministratorId().isEmpty())  {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AdministratorId");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}
+    			
+    			if(destinationReservationEntity.getUaslSections() == null
+    					|| destinationReservationEntity.getUaslSections().isEmpty()) {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSections");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}else {
+    				for(DestinationUaslSectionEntity destinationUaslSectionEntity : destinationReservationEntity.getUaslSections()) {
+    					if(destinationUaslSectionEntity.getUaslSectionId() == null
+    							|| destinationUaslSectionEntity.getUaslSectionId().isEmpty() ) {
+    						String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionId");
+    	    	            log.error(errorMessage);
+    	    	            result = false;
+    					}
+    					
+    					if(destinationUaslSectionEntity.getStartAt() == null || destinationUaslSectionEntity.getStartAt().isEmpty()) {
+    						String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+    	    	            log.error(errorMessage);
+    	    	            result = false;
+    					}else{
+    						if(!checktimeStampFormat(destinationUaslSectionEntity.getStartAt())) {
+    				    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+    				            log.error(errorMessage);
+    				            result = false;
+    			    		}
+    	    		    }
+    					
+    					if(destinationUaslSectionEntity.getEndAt() == null || destinationUaslSectionEntity.getEndAt().isEmpty()) {
+    						String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+    	    	            log.error(errorMessage);
+    	    	            result = false;
+    					}else{
+    						if(!checktimeStampFormat(destinationUaslSectionEntity.getEndAt())) {
+    				    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+    				            log.error(errorMessage);
+    				            result = false;
+    			    		}
+    	    		    }
+    					
+    					if(destinationUaslSectionEntity.getSequence() == null) {
+    						String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Sequence");
+    	    	            log.error(errorMessage);
+    	    	            result = false;
+    					}
+    				}
+    			}
+    		}
+    	}
+	    
+		//チェック結果を返却
+	  	return result;
+	}
+	
+	/**
+	 * 乗り入れ先航路の予約通知ペイロードの項目をチェック
+	 * 
+	 * @param destinationReservationNotification
+	 */
+	public boolean destinationReservationNotificationCheck(DestinationReservationNotification destinationReservationNotificationInfo) {
+		//チェック結果
+	    boolean result = true;
+	    
+	    if(destinationReservationNotificationInfo.getEventId() == null || destinationReservationNotificationInfo.getEventId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EventId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getRequestId() == null || destinationReservationNotificationInfo.getRequestId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "RequestId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getReservationId() == null || destinationReservationNotificationInfo.getReservationId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservationId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getOperatorId() == null || destinationReservationNotificationInfo.getOperatorId().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "OperatorId");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getFlightPurpose() == null || destinationReservationNotificationInfo.getFlightPurpose().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "FlightPurpose");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getStatus() == null) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
+            log.error(errorMessage);
+            result = false;
+	    }else if(destinationReservationNotificationInfo.getStatus().getValue() != "RESERVED"
+	    		&& destinationReservationNotificationInfo.getStatus().getValue() != "CANCELED"
+	    		&& destinationReservationNotificationInfo.getStatus().getValue() != "RESCINDED") {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
+            log.error(errorMessage);
+            result = false;
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getReservedAt() == null || destinationReservationNotificationInfo.getReservedAt().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservedAt");
+            log.error(errorMessage);
+            result = false;
+	    }else{
+	    	if(!checktimeStampFormat(destinationReservationNotificationInfo.getReservedAt())) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservedAt");
+	            log.error(errorMessage);
+	            result = false;
+    		}
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getUpdatedAt() == null || destinationReservationNotificationInfo.getUpdatedAt().isEmpty()) {
+	    	String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
+            log.error(errorMessage);
+            result = false;
+	    }else{
+	    	if(!checktimeStampFormat(destinationReservationNotificationInfo.getUpdatedAt())) {
+	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
+	            log.error(errorMessage);
+	            result = false;
+    		}
+	    }
+	    
+	    if(destinationReservationNotificationInfo.getUaslSections() == null
+    			|| destinationReservationNotificationInfo.getUaslSections().isEmpty()) {
+    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSections");
+            log.error(errorMessage);
+            result = false;
+    	}else {
+    		for(DestinationUaslSectionEntity destinationUaslSectionEntity : destinationReservationNotificationInfo.getUaslSections()) {
+    			if(destinationUaslSectionEntity.getUaslSectionId() == null || destinationUaslSectionEntity.getUaslSectionId().isEmpty()) {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionId");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}
+    			
+    			if(destinationUaslSectionEntity.getStartAt() == null || destinationUaslSectionEntity.getStartAt().isEmpty()) {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}else{
+    				if(!checktimeStampFormat(destinationUaslSectionEntity.getStartAt())) {
+    					String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "StartAt");
+    		            log.error(errorMessage);
+    		            result = false;
+    	    		}
+    		    }
+    			
+    			if(destinationUaslSectionEntity.getEndAt() == null || destinationUaslSectionEntity.getEndAt().isEmpty()) {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}else{
+    				if(!checktimeStampFormat(destinationUaslSectionEntity.getEndAt())) {
+    					String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EndAt");
+    		            log.error(errorMessage);
+    		            result = false;
+    	    		}
+    		    }
+    			
+    			if(destinationUaslSectionEntity.getSequence() == null) {
+    				String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Sequence");
+    	            log.error(errorMessage);
+    	            result = false;
+    			}
+    		}
+    	}
+		
+		//チェック結果を返却
+	  	return result;
+	}
+	
+	/**
+     * uaslInfoの必須な項目をチェック
+     * 
+     * @param uaslInfo
+     */
+    public boolean notNullCheckAirwayInfo(UaslInfo uaslInfo) {
+        //チェック結果
+        boolean result = true;
+        
+        if (uaslInfo.getRegisteredAt() == null || uaslInfo.getRegisteredAt().isEmpty()) {
             String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "RegisteredAt");
             log.error(errorMessage);
             result = false;
         }
-	    if (airwayInfo.getAirwayAdministratorId() == null || airwayInfo.getAirwayAdministratorId().isEmpty()) {
-            String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwayAdministratorId");
+        if (uaslInfo.getUaslAdministratorId() == null || uaslInfo.getUaslAdministratorId().isEmpty()) {
+            String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslAdministratorId");
             log.error(errorMessage);
             result = false;
         }
-	    if(airwayInfo.getAirway() != null) {
-	    	if (airwayInfo.getAirway().getAirwayId() == null || airwayInfo.getAirway().getAirwayId().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwayId");
-	    		log.error(errorMessage);
-	    		result = false;
-	    	}
-	    	if (airwayInfo.getAirway().getAirwayName() == null || airwayInfo.getAirway().getAirwayName().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwayName");
-	    		log.error(errorMessage);
-	    		result = false;
-	    	}
-	    	if (airwayInfo.getAirway().getFlightPurpose() == null || airwayInfo.getAirway().getFlightPurpose().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "FlightPurpose");
-	    		log.error(errorMessage);
-	    		result = false;
-	    	}
-	    	if (airwayInfo.getAirway().getCreatedAt() == null || airwayInfo.getAirway().getCreatedAt().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "CreatedAt");
-	    		log.error(errorMessage);
-	    		result = false;
-	    	}
-	    	if (airwayInfo.getAirway().getUpdatedAt() == null || airwayInfo.getAirway().getUpdatedAt().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
-	    		log.error(errorMessage);
-	    		result = false;
-	    	}
-	    	//航路区画情報そのものが存在しない場合、後続チェックを行わずチェックNGとする。
-	    	if (airwayInfo.getAirway().getAirwaySections() == null || airwayInfo.getAirway().getAirwaySections().isEmpty()) {
-	    		String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwaySections");
-	    		log.error(errorMessage);
-	    		return false;
-	    	}
-	    	//セクションの件数分繰り返しチェックを行う。
-	    	for (AirwaySection airwaySection : airwayInfo.getAirway().getAirwaySections()) {
-	    		if (airwaySection.getAirwaySectionId() == null || airwaySection.getAirwaySectionId().isEmpty()) {
-	    			String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwaySectionId");
-	    			log.error(errorMessage);
-	    			result = false;
-	    		}
-	    		if (airwaySection.getAirwaySectionName() == null || airwaySection.getAirwaySectionName().isEmpty()) {
-	    			String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwaySectionName");
-	    			log.error(errorMessage);
-	    			result = false;
-	    		}
-	    	}
+        if(uaslInfo.getUasl() != null) {
+            if (uaslInfo.getUasl().getUaslId() == null || uaslInfo.getUasl().getUaslId().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslId");
+                log.error(errorMessage);
+                result = false;
+            }
+            if (uaslInfo.getUasl().getUaslName() == null || uaslInfo.getUasl().getUaslName().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslName");
+                log.error(errorMessage);
+                result = false;
+            }
+            if (uaslInfo.getUasl().getFlightPurpose() == null || uaslInfo.getUasl().getFlightPurpose().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "FlightPurpose");
+                log.error(errorMessage);
+                result = false;
+            }
+            if (uaslInfo.getUasl().getCreatedAt() == null || uaslInfo.getUasl().getCreatedAt().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "CreatedAt");
+                log.error(errorMessage);
+                result = false;
+            }
+            if (uaslInfo.getUasl().getUpdatedAt() == null || uaslInfo.getUasl().getUpdatedAt().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UpdatedAt");
+                log.error(errorMessage);
+                result = false;
+            }
+            //航路区画情報そのものが存在しない場合、後続チェックを行わずチェックNGとする。
+            if (uaslInfo.getUasl().getUaslSections() == null || uaslInfo.getUasl().getUaslSections().isEmpty()) {
+                String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionsEntity");
+                log.error(errorMessage);
+                return false;
+            }
+            //セクションの件数分繰り返しチェックを行う。
+            for (UaslSections uaslSections : uaslInfo.getUasl().getUaslSections()) {
+                if (uaslSections.getUaslSectionId() == null || uaslSections.getUaslSectionId().isEmpty()) {
+                    String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionId");
+                    log.error(errorMessage);
+                    result = false;
+                }
+                if (uaslSections.getUaslSectionName() == null || uaslSections.getUaslSectionName().isEmpty()) {
+                    String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "UaslSectionName");
+                    log.error(errorMessage);
+                    result = false;
+                }
+            }
         }
         //チェック結果を返却
-		return result;
-
-	}
-
-    
-	/**
-	 * airwayReserveInfoの必須な項目をチェック
-	 * 
-	 * @param airwayReserveInfo 航路予約メッセージ
-	 * @return チェック結果
-	 */
-	public boolean notNullCheckAirwayReserveInfo(AirwayReserveInfo airwayReserveInfo) {
-	    //チェック結果
-	    boolean result = true;
-	    //受信メッセージ自体がnullの場合、後続処理を行わずにチェックNGとする。
-	    if(airwayReserveInfo == null) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwayReserveInfo");
-	        log.error(errorMessage);
-	        return false;
-	    }
-
-	    if (airwayReserveInfo.getAirwayReservationId() == null || airwayReserveInfo.getAirwayReservationId().isEmpty()) {
-	        // エラー メッセージ：{0}は必須項目です。出力される。
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwayReservationId");
-	        log.error(errorMessage);
-	        result = false;
-	    }
-	    if (airwayReserveInfo.getOperatorId() == null || airwayReserveInfo.getOperatorId().isEmpty()) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "OperatorId");
-	        log.error(errorMessage);
-	        result = false;
-	    }
-	    if (airwayReserveInfo.getEventId() == null || airwayReserveInfo.getEventId().isEmpty()) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "EventId");
-	        log.error(errorMessage);
-	        result = false;
-	    }
-	    if (airwayReserveInfo.getStatus() == null || airwayReserveInfo.getStatus().isEmpty()) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
-	        log.error(errorMessage);
-	        result = false;
-	    }
-	    else {
-	        if (airwayReserveInfo.getStatus().equals(STATUS_RESERVED)) {
-	            airwayReserveInfo.setStatus("1");
-	        }
-	        else if (airwayReserveInfo.getStatus().equals(STATUS_CANCELED)) {
-	            airwayReserveInfo.setStatus("2");
-	        }
-	        else if (airwayReserveInfo.getStatus().equals(STATUS_RESCINDED)) {
-	            airwayReserveInfo.setStatus("3");
-	        }
-	        else if (airwayReserveInfo.getStatus().equals(STATUS_AVAILABLE)) {
-	            airwayReserveInfo.setStatus("4");
-	        }
-	        //上記以外の場合、エラー値のためチェックNGとする。
-	        else {
-	            String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "Status");
-	            log.error(errorMessage);
-	            result = false;
-	        }
-	    }
-	    //予約航路区画情報そのものが存在しない場合、後続チェックを行わずチェックNGとする。
-	    if (airwayReserveInfo.getAirwaySections() == null || airwayReserveInfo.getAirwaySections().isEmpty()) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwaySections");
-	        log.error(errorMessage);
-	        return false;
-	    }
-	    for (ReserveSection reserveSection : airwayReserveInfo.getAirwaySections()) {
-	        if (reserveSection.getAirwaySectionId() == null || reserveSection.getAirwaySectionId().isEmpty()) {
-	            String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "AirwaySectionId");
-	            log.error(errorMessage);
-	            result = false;
-	        }		
-	    }
-	    if (airwayReserveInfo.getReservedAt() == null || airwayReserveInfo.getReservedAt().isEmpty()) {
-	        String errorMessage = MessageUtils.getMessage("DR000E003", (Object) "ReservedAt");
-	        log.error(errorMessage);
-	        result = false;
-	    }
-	    //チェック結果を返却
-	    return result;
-	}
-
-	/**
-	 * Json型MTQQメッセージをobjectに変更
-	 * 
-	 * @param payload
-	 * @param clazz
-	 * @return AirwayReserveInfo
-	 */
-	public <T> T converJsontoObject(String payload, Class<T> clazz) {
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			return mapper.readValue(payload, clazz);
-		} catch (IOException e) {
-			// エラーメッセージ：Jsonデータの形式が正しくありません。出力される。
-			String errorMessage = MessageUtils.getMessage("DRC01E002");
-			log.error(errorMessage,e);
-
-			return null;
-		}
-	}
-    
+        return result;
+    } 
 }

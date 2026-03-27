@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: 外部システム連携API
+  version: 1.0.0
+servers:
+  - url: https://{domain}/external/api/v1
+paths:
+  /swimExport/{maxFallRangeId}/{businessNumber}/{historyNum}:
+    put:
+      tags:
+        - ドローン航路システム
+      summary: SWIM連携用情報フィードバック.
+      description: |-
+        指定された事業者番号,最大落下範囲IDを用いてSWIM側システムに取り込んだ各種値(IDなど)を外部システム連携に反映する。
+      parameters:
+        - name: maxFallRangeId
+          in: path
+          description: 最大落下範囲ID
+          required: true
+          schema:
+            type: string
+            minLength: 36
+            maxLength: 36
+        - name: businessNumber
+          in: path
+          description: 事業者番号
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: historyNum
+          in: path
+          description: 履歴番号
+          required: true
+          schema:
+            type: integer
+        - name: force
+          in: query
+          description: 強制更新フラグ(任意履歴番号の更新用途)
+          required: false
+          schema:
+            type: boolean
+            default: false
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwimIDs'
+      responses:
+        "200":
+          description: 更新成功
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: "application/json"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseOK"
+        "400":
+          description: |
+            Bad Request パラメーターに誤りがある場合に返却する。具体的には以下のケースを想定する。  
+            - 必須指定されているパラメータが指定されていない場合  
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseBadRequestError"
+        "404":
+          description: Not Found 指定した情報が取得できない場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseNotFoundError"
+        "500":
+          description: Internal Server Error サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/common.ResponseInternalServerError"
+      security: []
+
+components:
+  schemas:
+    common.ResponseBadRequestError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 400
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "最大落下範囲IDは必須項目です。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseNotFoundError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 404
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "指定された情報は取得できませんでした。"
+      required:
+        - code
+        - errorMessage
+
+    common.ResponseInternalServerError:
+      description: エラーオブジェクト
+      type: object
+      properties:
+        code:
+          type: integer
+          description: エラーの種類を示すエラーコード
+          example: 500
+        errorMessage:
+          type: string
+          description: エラーの説明
+          example: "予期しないシステムエラーが発生しました。"
+      required:
+        - code
+        - errorMessage
+
+    ResponseOK:
+      description: 正常終了
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          description: 補足情報
+      required:
+        - code
+        - message
+
+    SwimIDs:
+      type: object
+      properties:
+        feature:
+          type: object
+          properties:
+            featureId:
+              type: string
+            timesliceId:
+              type: string
+            beginPosition:
+              type: string
+            endPosition:
+              type: string
+        object10:
+          type: object
+          properties:
+            objectId:
+              type: string
+        object13:
+          type: object
+          properties:
+            parObjectId:
+              description: object10-objectIdと同値
+              type: string
+            objectId:
+              type: string
+        object24:
+          type: object
+          properties:
+            objectId:
+              type: string
+        object29:
+          type: object
+          properties:
+            parObjectId:
+              description: object38-objectIdと同値
+              type: string
+            objectId:
+              type: string
+        object38:
+          properties:
+            parObjectId:
+              description: object24-objectIdと同値
+              type: string
+            objectId:
+              type: string

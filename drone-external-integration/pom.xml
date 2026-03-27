@@ -20,6 +20,7 @@
 		<module>drone-external-integration-dips</module>
 	    <module>drone-external-integration-auth</module>
 	    <module>drone-external-integration-notice</module>
+        <module>drone-external-integration-swim</module>
 	</modules>
 
 </project>

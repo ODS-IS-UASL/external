@@ -1,0 +1,73 @@
+{
+  "eventId": "123e4567-e89b-12d3-a456-426614174001",
+  "requestId": "123e4567-e89b-12d3-a456-426614174002",
+  "operatorId": "OPERATOR_1",
+  "flightPurpose": "ドローン鉄橋点検",
+  "status": "RESERVED",
+  "rawTotalAmount": 750,
+  "totalAmount": 660,
+  "reservedAt": "2026-02-12T10:00:00.000Z",
+  "estimatedAt": "2026-02-12T10:00:00.000Z",
+  "updatedAt": "2026-02-12T10:00:00.000Z",
+  "originReservation": {
+    "reservationId": "123e4567-e89b-12d3-a456-426614174003",
+    "uaslId": "1234567890123_dc0d6702-bfea-498f-91a1-8d752d67fb31",
+    "administratorId": "UASLADMINISTRATOR_A",
+    "subTotalAmount": 390,
+    "uaslSections": [
+      {
+        "uaslSectionId": "c72309ea-d6b3-4b32-8f74-661ec6105478",
+        "startAt": "2026-02-13T13:00:00Z",
+        "endAt": "2026-02-13T14:30:00Z",
+        "sequence": 1,
+        "amount": 90
+      }
+    ],
+    "ports": [
+      {
+        "portId": "UASLPORT_A",
+        "reservationId": "123e4567-e89b-12d3-a456-426614174004",
+        "name": "離着陸場A",
+        "usageType": 1,
+        "startAt": "2026-02-13T12:30:00Z",
+        "endAt": "2026-02-13T14:30:00Z",
+        "amount": 120
+      }
+    ],
+    "vehicles": [
+      {
+        "reservationId": "123e4567-e89b-12d3-a456-426614174005",
+        "vehicleId": "UASLVEHICLE_A",
+        "aircraftInfo": {
+          "aircraftInfoId": 0,
+          "registrationId": "JU1234567890AB",
+          "maker": "DJI",
+          "modelNumber": "M30T",
+          "name": "DJI Matrice 30T",
+          "type": "マルチコプター",
+          "length": 1.2
+        },
+        "startAt": "2026-02-13T12:30:00Z",
+        "endAt": "2026-02-13T15:30:00Z",
+        "amount": 180
+      }
+    ],
+    "conflictedFlightPlanIds": [],
+    "conformityAssessmentResults": [
+      {
+        "uaslSectionId": "UASLSECTION_A-1",
+        "aircraftInfo": {
+          "maker": "DJI",
+          "modelNumber": "M30T",
+          "name": "DJI Matrice 30T",
+          "type": "マルチコプター",
+          "length": 1.2
+        },
+        "evaluationResults": "false",
+        "type": "weather",
+        "reasons": "風速条件範囲内判定エラー"
+      }
+    ]
+  },
+  "destinationReservations": []
+}

@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AirwayReservationEntity {
 
+	// 親予約ID
+	private String requestId;
+	
 	// 航路予約ID
 	private String airwayReserveId;
 
@@ -24,12 +27,18 @@ public class AirwayReservationEntity {
 
 	// PublishイベントID
 	private String eventId;
+	
+	// 飛行目的
+	private String flightPurpose;
 
 	// 処理区分
 	private String status;
 
 	// 予約完了日時
 	private LocalDateTime reservedAt;
+	
+	// 航路ID
+	private String uaslId;
 
 	// 予約状態更新日時
 	private LocalDateTime updatedAt;

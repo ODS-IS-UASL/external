@@ -14,20 +14,33 @@ spring:
             enable: true
     test-connection: false
 
-systemuser: -1
-rest.api.airway.url.get: ${AIRWAY_API_BASE_DOMAIN_URL:}${AIRWAY_API_PATH:/airwayDesign/airway}
-
 mail:
   template:
-    fromAddress: ${MAIL_FROM_ADDRESS:test.sample@example.com}
-    fromName: ${MAIL_FROM_NAME:ドローン航路基盤システム}
+    fromAddress: ${MAIL_FROM_ADDRESS:}
+    fromName: ${MAIL_FROM_NAME:}
 
-rest.api.dips.area.url.get: ${DIPS_FLIGHT_PROHIBITED_AREA_URL:https://www.stg.uafpi.dips.mlit.go.jp/api/flight-prohibited-area/search}
-
-mqtt.topic.airway: airway/administrator/airwayInformation/#
-mqtt.topic.airway-reservation: airway/operator/+/airwayReservation/#
 notice.mail.login.link: ${MAIL_LOGIN_LINK:}
-notice.mail.contanct.person: ${MAIL_CONTACT_PERSON:システム管理者}
-notice.mail.contanct.affiliation: ${MAIL_CONTACT_AFFILIATION:所属組織}
-notice.mail.contanct.phonenumber: ${MAIL_CONTACT_PHONENUMBER:XXX-XXXX-XXXX}
-notice.mail.contanct.mailaddress: ${MAIL_CONTACT_MAILADDRESS:utm.sample@example.co.jp}
+notice.mail.contanct.person: ${MAIL_CONTACT_PERSON:}
+notice.mail.contanct.affiliation: ${MAIL_CONTACT_AFFILIATION:}
+notice.mail.contanct.phonenumber: ${MAIL_CONTACT_PHONENUMBER:}
+notice.mail.contanct.mailaddress: ${MAIL_CONTACT_MAILADDRESS:}
+
+# ユーザID値
+systemuser: -1
+
+# L3-identity-component クライアントID
+idp.client-id: ${IDP_CLIENT_ID:}
+# L3-identity-component クライアントシークレット
+idp.client-secret: ${IDP_CLIENT_SECRET:}
+# L3-identity-component システムに払い出されているAPIKey
+idp.apikey: ${IDP_API_KEY:}
+
+rest.api.airway.url.get: ${AIRWAY_API_BASE_DOMAIN_URL:}${AIRWAY_API_PATH:}
+rest.api.location.url.get: ${LOCATION_API_URL:https://nominatim.openstreetmap.org/reverse}
+rest.api.usermanagement.url.post: ${USERMANAGEMENT_API_BASE_DOMAIN_URL:}${USERMANAGEMENT_API_PATH:}
+rest.api.useraccesstoken.url.post: ${USERACCESSTOKEN_API_BASE_DOMAIN_URL:}${USERACCESSTOKEN_API_PATH:}
+rest.api.dips.area.url.get: ${DIPS_FLIGHT_PROHIBITED_AREA_URL:}
+rest.api.dips.flightPlan.url.get: ${DIPS_FLIGHT_PLAN_INFO_URL:}
+retryCntMax: 5
+mqtt.topic.airway: uasl/administrator/uaslInformation/#
+mqtt.topic.airway-reservation: uasl/operator/+/uaslReservation/#

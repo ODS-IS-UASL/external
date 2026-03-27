@@ -1,3 +1,11 @@
+/*
+* 開発システム： ドローン航路基盤システム
+* ファイル名： RoutePlanningService.java
+* 著作権： Copyright (C) 202X-20XX,  経済産業省
+* 会社名： NTT DATA Corporation
+* 更新日： $Date$
+*
+*/
 package jp.go.meti.drone.dips.service.export;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +21,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import jp.go.meti.drone.dips.apimodel.export.AirwayEntity;
+import jp.go.meti.drone.dips.apimodel.export.UaslTopEntity;
 import jp.go.meti.drone.dips.model.export.dto.AirwayGetResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,18 +56,18 @@ public class RoutePlanningService {
     	headers.set("Content-Type", "application/json");
     	// クエリパラメータ
     	UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
-    	String uri = builder.queryParam("airwayId", airwayId).toUriString();
+    	String uri = builder.queryParam("uaslId", airwayId).toUriString();
     	HttpEntity<String> entity = new HttpEntity<>(headers);
 
-    	ResponseEntity<AirwayEntity> response;
+    	ResponseEntity<UaslTopEntity> response;
     	try {
     		// 航路情報取得(GET リクエスト)を送信
-    		response = restTemplate.exchange(uri, HttpMethod.GET, entity, AirwayEntity.class);
+    		response = restTemplate.exchange(uri, HttpMethod.GET, entity, UaslTopEntity.class);
     		
     		if (response.getStatusCode() == HttpStatus.OK) {
         		log.info("HTTP Request Success.");
         		result.setStatusCode(200);
-        		result.setAirwayEntity(response.getBody());
+        		result.setUaslTopEntity(response.getBody());
         		return result;
         	} else {
         		log.error("HTTP Request Failure. STATUS_CODE: ", response.getStatusCode());

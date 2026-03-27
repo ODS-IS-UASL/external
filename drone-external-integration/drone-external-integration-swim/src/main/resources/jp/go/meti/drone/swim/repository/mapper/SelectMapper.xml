@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="jp.go.meti.drone.swim.repository.mapper.SelectMapper">
+
+    <resultMap id="swimFeedbackMap" type="jp.go.meti.drone.swim.repository.entity.SelectEntity">
+        <result property="businessNumber" column="business_number" />
+        <result property="maxFallRangeId" column="max_fall_range_id" />
+        <result property="historyIndex" column="history_index" />
+        <result property="operatorId" column="operator_id" />
+        <result property="identifier" column="identifier" />
+        <result property="internalIdentifier" column="internal_identifier" />
+        <result property="swimId" column="swim_id" />
+        <result property="enable" column="enable" />
+        <result property="updateAt" column="update_at" />
+        <result property="createAt" column="create_at" />
+
+    </resultMap>
+
+
+	<select id="selectAllHistory" resultMap="swimFeedbackMap">
+	    SELECT distinct
+	        smr.business_number,
+	        smr.max_fall_range_id,
+	        smr_h.history_index,
+	        smr.operator_id,
+	        smr.identifier,
+	        smr.internal_identifier,
+	        smr.swim_id,
+	        smr.enable,
+	        smr.update_at,
+	        smr.create_at
+	    FROM
+	        swim_max_fall_range smr
+	        INNER JOIN swim_max_fall_range_history smr_h
+	         ON smr.business_number = smr_h.business_number
+	          AND smr.max_fall_range_id = smr_h.max_fall_range_id
+        	INNER JOIN swim_feedback f
+	         ON smr_h.business_number = f.business_number
+	          AND smr_h.max_fall_range_id = f.max_fall_range_id
+	          AND smr_h.history_index = f.history_index
+        WHERE smr.business_number = #{businessNumber}
+          AND smr.max_fall_range_id = #{maxFallRangeId}
+          AND smr.enable = true
+        ORDER BY smr.business_number ASC,
+	        smr.max_fall_range_id ASC,
+			smr_h.history_index ASC
+	</select>
+
+    <resultMap id="SelectResultMap" type="jp.go.meti.drone.swim.repository.entity.SelectEntity">
+        <result property="businessNumber" column="business_number" />
+        <result property="maxFallRangeId" column="max_fall_range_id" />
+        <result property="historyIndex" column="history_index" />
+        <result property="operatorId" column="operator_id" />
+        <result property="identifier" column="identifier" />
+        <result property="internalIdentifier" column="internal_identifier" />
+        <result property="swimId" column="swim_id" />
+        <result property="enable" column="enable" />
+        <result property="updateAt" column="update_at" />
+        <result property="createAt" column="create_at" />
+    </resultMap>
+
+	<select id="selectMax" resultMap="SelectResultMap">
+	    SELECT
+	        smr.business_number,
+	        smr.max_fall_range_id,
+	        smr_h.history_index,
+	        smr.operator_id,
+	        smr.identifier,
+	        smr.internal_identifier,
+	        smr.swim_id,
+	        smr.enable,
+	        smr.update_at,
+	        smr.create_at
+	    FROM
+	        swim_max_fall_range smr
+	        INNER JOIN swim_max_fall_range_history smr_h
+	         ON smr.business_number = smr_h.business_number
+               AND smr.max_fall_range_id = smr_h.max_fall_range_id
+	        INNER JOIN (
+				select business_number, max_fall_range_id, max(history_index) as history_index
+				from swim_max_fall_range_history
+				group by business_number, max_fall_range_id
+			) m ON
+			 m.business_number = smr.business_number
+			 AND m.max_fall_range_id = smr.max_fall_range_id
+			 AND m.history_index = smr_h.history_index
+        WHERE smr.business_number = #{businessNumber}
+          AND smr.max_fall_range_id = #{maxFallRangeId}
+          AND smr.enable = true
+	</select>
+	
+	<select id="selectFeedback" resultMap="SelectResultMap">
+	    SELECT
+	        smr.business_number,
+	        smr.max_fall_range_id,
+	        smr_h.history_index,
+	        smr.operator_id,
+	        smr.identifier,
+	        smr.internal_identifier,
+	        smr.swim_id,
+	        smr.enable,
+	        smr.update_at,
+	        smr.create_at
+	    FROM
+	        swim_max_fall_range smr
+	        INNER JOIN swim_max_fall_range_history smr_h
+	         ON smr.business_number = smr_h.business_number
+	          AND smr.max_fall_range_id = smr_h.max_fall_range_id
+	        INNER JOIN swim_feedback f
+	         ON smr_h.business_number = f.business_number
+	          AND smr_h.max_fall_range_id = f.max_fall_range_id
+	          AND smr_h.history_index = f.history_index
+        WHERE smr.business_number = #{businessNumber}
+          AND smr.max_fall_range_id = #{maxFallRangeId}
+          AND smr.enable = true
+          AND f.history_index = #{historyIndex}
+	</select>
+
+</mapper>

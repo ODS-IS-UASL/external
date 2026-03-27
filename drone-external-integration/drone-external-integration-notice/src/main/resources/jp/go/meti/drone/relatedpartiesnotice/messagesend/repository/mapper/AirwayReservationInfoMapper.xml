@@ -2,48 +2,39 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
 "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.mapper.AirwayReservationInfoMapper">
-  <select id="searchAirwayReservationInfo" resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity">
+<resultMap id="AirwayReservationDetailMap" type="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity">
+        <!-- 航路予約関係者 -->
+        <result property="airwayReserveId" column="airway_reserve_id"/>
+        <result property="relatedOperatorId" column="related_operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="notificationEmail" column="notification_email"/>
+        <!-- 航路予約情報 -->
+        <result property="reservationOperatorId" column="reservation_operator_id"/>
+        <result property="flightPurpose" column="flight_purpose"/>
+        <result property="status" column="status"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- 航路情報 -->
+        <result property="airwayName" column="airway_name"/>
+    </resultMap>
+
+  <select id="selectReservationDetail" resultMap="AirwayReservationDetailMap">
     SELECT
-        DISTINCT ON(ar.airway_reserve_id, ays.airway_id) 
-        ar.airway_reserve_id AS airwayReserveId,
-        ar.operator_id AS operatorId,
-        ar.status AS status,
-        ar.reserved_at AS reservedAt,
-        ar.updated_at AS updatedAt,
-        ays.airway_id AS airwayId,
-        aw.airway_name AS airwayName
-    FROM
-        airway_reservation ar,
-        reservation_airway_association raa,
-        airway_section ays,
-        airway aw
-    WHERE
-        raa.airway_reserve_id = ar.airway_reserve_id
-        AND raa.airway_section_id = ays.airway_section_id
-        AND aw.airway_id = ays.airway_id
-        AND raa.airway_reserve_id = #{airwayReserveId}
+            rr.airway_reserve_id,
+            rr.operator_id AS related_operator_id,
+            rr.operator_name,
+            rr.notification_email,
+            ar.operator_id AS reservation_operator_id,
+            ar.flight_purpose,
+            ar.status,
+            ar.updated_at,
+            a.airway_name
+        FROM AIRWAY_RESERVE_RELATED rr
+        JOIN AIRWAY_RESERVATION ar
+            ON rr.request_id = ar.request_id
+           AND rr.airway_reserve_id = ar.airway_reserve_id
+        JOIN AIRWAY a
+            ON ar.uasl_id = a.airway_id
+        WHERE rr.request_id = #{requestId}
   </select>
-	<!--airway_idに基づいて航路予約情報取得-->
-	<select id="findAirwayReservationInfo"
-		resultType="jp.go.meti.drone.relatedpartiesnotice.messagesend.repository.entity.AirwayReservationInfoEntity">
-	SELECT
-		distinct(ar.airway_reserve_id) AS airwayReserveId,
-		ar.operator_id AS operatorId,
-		ar.status AS status,
-		ar.reserved_at AS reservedAt,
-		ar.updated_at AS updatedAt,
-		ays.airway_id AS airwayId,
-		aw.airway_name AS airwayName
-	FROM
-		airway_reservation ar,
-		reservation_airway_association raa,
-		airway_section ays,
-		airway aw
-	WHERE ar.status IN ('1', '4')
-		AND raa.airway_reserve_id = ar.airway_reserve_id
-		AND raa.airway_section_id = ays.airway_section_id
-		AND aw.airway_id = ays.airway_id
-		AND ays.airway_id = #{airwayId}
-  </select>
-  
+
 </mapper>
